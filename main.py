@@ -1,3 +1,4 @@
+import asyncio
 import sys
 sys.setrecursionlimit(10000)
 import numpy as np
@@ -16,14 +17,46 @@ import pickle
 import random
 import pandas as pd
 from gtts import gTTS
-from WordMetrics import edit_distance_python2
 from WordMatching import get_best_mapped_words
-from unidecode import unidecode
 import epitran
-from datetime import datetime
+import noisereduce as nr
+import jellyfish
+from concurrent.futures import ThreadPoolExecutor
 from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 
 app = Flask(__name__, template_folder="./templates", static_folder="./static")
+
+# Variáveis globais para modelos
+model, processor, translation_model, tokenizer = None, None, None, None
+
+# Executor para processamento assíncrono
+executor = ThreadPoolExecutor(max_workers=1)
+
+# Carregar frases categorizadas e arquivos --------------------------------------------------------------------------------------------------
+
+# Caminhos dos arquivos de desempenho e progresso do usuário
+performance_file = 'performance_data.pkl'
+user_progress_file = 'user_progress.pkl'
+
+# Carregar frases aleatórias
+try:
+    with open('data_de_en_fr.pickle', 'rb') as f:
+        random_sentences_df = pickle.load(f)
+    # Verificar se é um DataFrame e converter para lista de dicionários
+    if isinstance(random_sentences_df, pd.DataFrame):
+        random_sentences = random_sentences_df.to_dict(orient='records')
+    else:
+        random_sentences = random_sentences_df
+except Exception as e:
+    print(f"Erro ao carregar data_de_en_fr.pickle: {e}")
+    random_sentences = []
+
+try:
+    with open('frases_categorias.pickle', 'rb') as f:
+        categorized_sentences = pickle.load(f)
+except Exception as e:
+    print(f"Erro ao carregar frases_categorias.pickle: {e}")
+    categorized_sentences = {}
 
 # Carregar o Modelo de SST Francês atualizado
 model_name = "jonatasgrosman/wav2vec2-large-xlsr-53-french"
@@ -31,12 +64,94 @@ processor = Wav2Vec2Processor.from_pretrained(model_name)
 model = Wav2Vec2ForCTC.from_pretrained(model_name)
 
 # Modelo para tradução
-translation_model_name = 'facebook/m2m100_418M'  # Ou 'facebook/m2m100_1.2B' para um modelo maior
+translation_model_name = 'facebook/m2m100_418M'
 tokenizer = M2M100Tokenizer.from_pretrained(translation_model_name)
 translation_model = M2M100ForConditionalGeneration.from_pretrained(translation_model_name)
 
+# Carregar progresso do usuário
+def load_performance_data():
+    if os.path.exists(performance_file):
+        with open(performance_file, 'rb') as f:
+            return pickle.load(f)
+    else:
+        return []
+
+def save_performance_data(data):
+    with open(performance_file, 'wb') as f:
+        pickle.dump(data, f)
+
+performance_data = load_performance_data()
+
+def load_user_progress():
+    if os.path.exists(user_progress_file):
+        with open(user_progress_file, 'rb') as f:
+            return pickle.load(f)
+    else:
+        return {}
+
+def save_user_progress(progress):
+    with open(user_progress_file, 'wb') as f:
+        pickle.dump(progress, f)
+
+user_progress = load_user_progress()
+
+##-----------------------------------------------------------------------------------------------------------
+# Iniciar o epitran e funções de tradução
+
+# Inicializar Epitran para Francês
+epi = epitran.Epitran('fra-Latn')
+
 source_language = 'fr'  # Francês
 target_language = 'pt'  # Português
+
+# Mapeamento atualizado de fonemas franceses para português
+french_to_portuguese_phonemes = {
+    # Vogais orais
+    'i': 'i',
+    'e': 'ê',
+    'ɛ': 'é',
+    'a': 'a',
+    'ɑ': 'a',
+    'ɔ': 'ó',
+    'o': 'ô',
+    'u': 'u',
+    'y': 'u',
+    'ø': 'e',
+    'œ': 'é',
+    'ə': 'e',
+
+    # Vogais nasais
+    'ɛ̃': 'ẽ',
+    'ɑ̃': 'ã',
+    'ɔ̃': 'õ',
+    'œ̃': 'ũ',
+
+    # Semivogais
+    'j': 'i',
+    'w': 'u',
+    'ɥ': 'ui',
+
+    # Consoantes
+    'b': 'b',
+    'd': 'd',
+    'f': 'f',
+    'g': 'g',
+    'ʒ': 'j',
+    'k': 'k',
+    'l': 'l',
+    'm': 'm',
+    'n': 'n',
+    'p': 'p',
+    'ʁ': 'rr',
+    'r': 'rr',
+    's': 's',
+    't': 't',
+    'v': 'v',
+    'z': 'z',
+    'ʃ': 'ch',
+    'ɲ': 'nh',
+    'ŋ': 'n',
+}
 
 # Função de Tradução
 def translate_to_portuguese(text):
@@ -53,93 +168,14 @@ def translate_to_portuguese(text):
         print(f"Erro na tradução: {e}")
         return "Tradução indisponível."
 
-# Funções para carregar e salvar dados de desempenho
-performance_file = 'performance_data.pkl'
-
-def load_performance_data():
-    if os.path.exists(performance_file):
-        with open(performance_file, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return []
-
-def save_performance_data(data):
-    with open(performance_file, 'wb') as f:
-        pickle.dump(data, f)
-
-performance_data = load_performance_data()
-
-# Arquivo para armazenar o progresso do usuário
-user_progress_file = 'user_progress.pkl'
-
-def load_user_progress():
-    if os.path.exists(user_progress_file):
-        with open(user_progress_file, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return {}
-
-def save_user_progress(progress):
-    with open(user_progress_file, 'wb') as f:
-        pickle.dump(progress, f)
-
-user_progress = load_user_progress()
-
-# Inicializar Epitran para Francês
-epi = epitran.Epitran('fra-Latn')
-
-# Mapeamento atualizado de fonemas franceses para português
-french_to_portuguese_phonemes = {
-    # Vogais orais
-    'i': 'i',     # como em "fil"
-    'e': 'ê',     # como em "clé"
-    'ɛ': 'é',     # como em "fait"
-    'a': 'a',     # como em "abat"
-    'ɑ': 'a',     # como em "pâte"
-    'ɔ': 'ó',     # como em "dormir"
-    'o': 'ô',     # como em "dôme"
-    'u': 'u',     # como em "hibou"
-    'y': 'u',     # aproximado ao "u" francês em "tu"
-    'ø': 'e',     # como em "jeu"
-    'œ': 'é',     # aproximado ao som em "immeuble"
-    'ə': 'e',     # vogal neutra, como em "premier"
-
-    # Vogais nasais
-    'ɛ̃': 'ẽ',    # como em "sein"
-    'ɑ̃': 'ã',    # como em "grand"
-    'ɔ̃': 'õ',    # como em "sombre"
-    'œ̃': 'ũ',    # aproximado ao som nasal em "brun"
-
-    # Semivogais
-    'j': 'i',     # como em "yeux"
-    'w': 'u',     # como em "jouet"
-    'ɥ': 'ui',    # como em "lui"
-
-    # Consoantes
-    'b': 'b',     # como em "blond"
-    'd': 'd',     # como em "don"
-    'f': 'f',     # como em "fait"
-    'g': 'g',     # como em "gage"
-    'ʒ': 'j',     # como em "gel"
-    'k': 'k',     # como em "cou"
-    'l': 'l',     # como em "lire"
-    'm': 'm',     # como em "maire"
-    'n': 'n',     # como em "nuire"
-    'p': 'p',     # como em "présent"
-    'ʁ': 'rr',    # como em "rat"
-    'r': 'rr',    # representação alternativa
-    's': 's',     # como em "sans"
-    't': 't',     # como em "talent"
-    'v': 'v',     # como em "vitesse"
-    'z': 'z',     # como em "zone"
-    'ʃ': 'ch',    # como em "chaleur"
-    'ɲ': 'nh',    # como em "gagner"
-    'ŋ': 'n',     # como em "camping" (aproximação)
-}
+# Função para obter pronúncia fonética
+def get_french_phonetic(word):
+    return epi.transliterate(word)
 
 def get_pronunciation(word):
-    # Transcreve a palavra usando Epitran
-    pronunciation = epi.transliterate(word)
+    # Remover o apóstrofo para o Epitran
+    word_clean = word.replace("'", '')
+    pronunciation = epi.transliterate(word_clean)
     return pronunciation
 
 def omit_schwa(pronunciation):
@@ -176,202 +212,82 @@ def transliterate_and_convert(word):
     pronunciation_pt = convert_pronunciation_to_portuguese(pronunciation)
     return pronunciation_pt
 
-def compare_pronunciations(correct_pronunciation, user_pronunciation, similarity_threshold=0.9):
-    distance = edit_distance_python2(correct_pronunciation, user_pronunciation)
-    max_length = max(len(correct_pronunciation), len(user_pronunciation))
-    if max_length == 0:
-        return False  # Evita divisão por zero
-    similarity = 1 - (distance / max_length)
-    return similarity >= similarity_threshold
+def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
+    # Calcular distância Damerau-Levenshtein normalizada
+    damerau_score = 1 - jellyfish.damerau_levenshtein_distance(phonetic1, phonetic2) / max(len(phonetic1), len(phonetic2))
 
+    # Calcular similaridade Jaro-Winkler
+    jaro_winkler_score = jellyfish.jaro_winkler_similarity(phonetic1, phonetic2)
+
+    # Combinar ambos os resultados com uma ponderação
+    combined_score = 0.7 * damerau_score + 0.3 * jaro_winkler_score
+
+    # Suavização para pontuações próximas ao limite
+    smooth_threshold = threshold - 0.05 if combined_score >= threshold - 0.05 else threshold
+
+    # Verificar se a pontuação combinada atinge o limite ajustado
+    return combined_score >= smooth_threshold
+
+# Normalização de texto para comparação
 def normalize_text(text):
     text = text.lower()
-    # Substituir apóstrofos especiais pelo apóstrofo ASCII
     text = text.replace("’", "'")
-    # Remover pontuação, exceto apóstrofos
+    # Manter apóstrofos dentro das palavras e remover outros caracteres especiais
     text = re.sub(r"[^\w\s']", '', text)
-    # Recombinar contrações separadas por espaços
-    text = re.sub(r"\b(\w+)\s'\s(\w+)\b", r"\1'\2", text)
-    text = text.strip()
-    return text
+    # Garantir que não haja espaços desnecessários ao redor dos apóstrofos
+    text = re.sub(r"\s+'", "'", text)
+    text = re.sub(r"'\s+", "'", text)
+    return text.strip()
 
 def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
 
-# Carregar frases aleatórias
-try:
-    with open('data_de_en_fr.pickle', 'rb') as f:
-        random_sentences_df = pickle.load(f)
-    # Verificar se é um DataFrame e converter para lista de dicionários
-    if isinstance(random_sentences_df, pd.DataFrame):
-        random_sentences = random_sentences_df.to_dict(orient='records')
-    else:
-        random_sentences = random_sentences_df
-except Exception as e:
-    print(f"Erro ao carregar data_de_en_fr.pickle: {e}")
-    random_sentences = []
+##--------------------------------------------------------------------------------------------------------------------------------
+# Processamento de áudio:
 
-# Carregar frases categorizadas
-try:
-    with open('frases_categorias.pickle', 'rb') as f:
-        categorized_sentences = pickle.load(f)
-except Exception as e:
-    print(f"Erro ao carregar frases_categorias.pickle: {e}")
-    categorized_sentences = {}
+# Função para melhorar a qualidade do áudio com redução de ruído
+def reduce_noise(waveform, sample_rate):
+    return nr.reduce_noise(y=waveform, sr=sample_rate)
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    file = request.files['audio']
-    text = request.form['text']
-    category = request.form.get('category', 'random')
-
-    # Salvar o arquivo enviado em um arquivo temporário
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-        tmp_file.write(file.read())
-        tmp_file_path = tmp_file.name
-
+# Função de processamento de áudio
+def process_audio(file_path):
     try:
-        # Ler o arquivo de áudio usando o módulo wave
-        with wave.open(tmp_file_path, 'rb') as wav_file:
+        with wave.open(file_path, 'rb') as wav_file:
             sample_rate = wav_file.getframerate()
             num_frames = wav_file.getnframes()
-            waveform = wav_file.readframes(num_frames)
-            waveform = np.frombuffer(waveform, dtype=np.int16).astype(np.float32) / 32768.0
-            waveform = torch.tensor(waveform, dtype=torch.float32).unsqueeze(0)
-
-        # Resample se necessário
+            waveform = np.frombuffer(wav_file.readframes(num_frames), dtype=np.int16) / 32768.0
+        waveform = reduce_noise(waveform, sample_rate)
+        waveform_tensor = torch.tensor(waveform, dtype=torch.float32).unsqueeze(0)
         if sample_rate != 16000:
-            waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform)
-
-        waveform = waveform.squeeze(0)
-
-        # Normalizar o volume
-        waveform = waveform / waveform.abs().max()
-
-        # Ajustar os parâmetros do modelo
-        inputs = processor(
-            waveform,
-            sampling_rate=16000,
-            return_tensors="pt",
-            padding=True
-        )
-
+            waveform_tensor = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform_tensor)
+        inputs = processor(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
         with torch.no_grad():
             logits = model(inputs.input_values).logits
-
         predicted_ids = torch.argmax(logits, dim=-1)
-        transcription = processor.batch_decode(predicted_ids)[0]
+        return processor.batch_decode(predicted_ids)[0]
     finally:
-        os.remove(tmp_file_path)
+        os.remove(file_path)
 
-    # Após normalizar a transcrição
-    normalized_transcription = normalize_text(transcription)
-    normalized_text = normalize_text(text)
+##--------------------------------------------------------------------------------------------------------------------------------
+# Rotas de API
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    # Estimativas e palavras reais
-    words_estimated = normalized_transcription.split()
-    words_real = normalized_text.split()
-
-    # Utilizar get_best_mapped_words para obter o mapeamento
-    mapped_words, mapped_words_indices = get_best_mapped_words(words_estimated, words_real)
-
-    # Gerar HTML com palavras codificadas por cores e feedback
-    diff_html = []
-    pronunciations = {}
-    feedback = {}
-    correct_count = 0
-    incorrect_count = 0
-
-    for idx, real_word in enumerate(words_real):
-        if idx < len(mapped_words):
-            mapped_word = mapped_words[idx]
-            correct_pronunciation = transliterate_and_convert(real_word)
-            user_pronunciation = transliterate_and_convert(mapped_word)
-            if compare_pronunciations(correct_pronunciation, user_pronunciation):
-                diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
-                correct_count += 1
-            else:
-                diff_html.append(f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
-                incorrect_count += 1
-                feedback[real_word] = {
-                    'correct': correct_pronunciation,
-                    'user': user_pronunciation,
-                    'suggestion': f"Tente pronunciar '{real_word}' como '{correct_pronunciation}'"
-                }
-            pronunciations[real_word] = {
-                'correct': correct_pronunciation,
-                'user': user_pronunciation
-            }
-        else:
-            # Palavra não reconhecida
-            diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
-            incorrect_count += 1
-            feedback[real_word] = {
-                'correct': transliterate_and_convert(real_word),
-                'user': '',
-                'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert(real_word)}'"
-            }
-            pronunciations[real_word] = {
-                'correct': transliterate_and_convert(real_word),
-                'user': ''
-            }
-
-    diff_html = ' '.join(diff_html)
-
-    # Calcula a taxa de acerto e completude
-    total_words = correct_count + incorrect_count
-    ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
-    completeness_score = (len(words_estimated) / len(words_real)) * 100
-
-    # Armazena os resultados diários
-    performance_data.append({
-        'date': pd.Timestamp.now().strftime('%Y-%m-%d'),
-        'correct': correct_count,
-        'incorrect': incorrect_count,
-        'ratio': ratio,
-        'completeness_score': completeness_score,
-        'sentence': text
-    })
-    save_performance_data(performance_data)
-
-    # Atualizar o progresso do usuário
-    if category != 'random':
-        user_category_progress = user_progress.get(category, {'sentences_done': [], 'performance': []})
-
-        if text not in user_category_progress['sentences_done']:
-            user_category_progress['sentences_done'].append(text)
-
-        user_category_progress['performance'].append({
-            'sentence': text,
-            'ratio': ratio,
-            'completeness_score': completeness_score
-        })
-
-        user_progress[category] = user_category_progress
-        save_user_progress(user_progress)
-
-    # Logging para depuração
-    print(f"Correct: {correct_count}, Incorrect: {incorrect_count}, Total: {total_words}, Ratio: {ratio}")
-    formatted_ratio = "{:.2f}".format(ratio)
-    formatted_completeness = "{:.2f}".format(completeness_score)
-
-    return jsonify({
-        'ratio': formatted_ratio,
-        'diff_html': diff_html,
-        'pronunciations': pronunciations,
-        'feedback': feedback,
-        'completeness_score': formatted_completeness
-    })
+@app.route('/pronounce', methods=['POST'])
+def pronounce():
+    text = request.form['text']
+    # Certifique-se de que os apóstrofos estão corretos
+    text = text.replace("’", "'")
+    words = text.split()
+    pronunciations = [transliterate_and_convert(word) for word in words]
+    return jsonify({'pronunciations': ' '.join(pronunciations)})
 
 @app.route('/translate', methods=['POST'])
 def translate():
     text = request.form['text']
     translated_text = translate_to_portuguese(text)
     return jsonify({'translation': translated_text})
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/get_sentence', methods=['POST'])
 def get_sentence():
@@ -418,14 +334,96 @@ def get_sentence():
         print(f"Erro no endpoint /get_sentence: {e}")
         return jsonify({"error": "Erro interno no servidor."}), 500
 
-@app.route('/pronounce', methods=['POST'])
-def pronounce():
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['audio']
     text = request.form['text']
-    # Certifique-se de que os apóstrofos estão corretos
-    text = text.replace("’", "'")
-    words = text.split()
-    pronunciations = [transliterate_and_convert(word) for word in words]
-    return jsonify({'pronunciations': ' '.join(pronunciations)})
+    category = request.form.get('category', 'random')
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+        tmp_file.write(file.read())
+        tmp_file_path = tmp_file.name
+
+    # Executar processamento assíncrono de áudio
+    transcription = executor.submit(process_audio, tmp_file_path).result()
+
+    normalized_transcription = normalize_text(transcription)
+    normalized_text = normalize_text(text)
+    words_estimated = normalized_transcription.split()
+    words_real = normalized_text.split()
+    mapped_words, mapped_words_indices = get_best_mapped_words(words_estimated, words_real)
+
+    diff_html = []
+    pronunciations = {}
+    feedback = {}
+    correct_count = 0
+    incorrect_count = 0
+
+    for idx, real_word in enumerate(words_real):
+        if idx < len(mapped_words):
+            mapped_word = mapped_words[idx]
+            correct_pronunciation = transliterate_and_convert(real_word)
+            user_pronunciation = transliterate_and_convert(mapped_word)
+            if compare_phonetics(correct_pronunciation, user_pronunciation):
+                diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                correct_count += 1
+            else:
+                diff_html.append(f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                incorrect_count += 1
+                feedback[real_word] = {
+                    'correct': correct_pronunciation,
+                    'user': user_pronunciation,
+                    'suggestion': f"Tente pronunciar '{real_word}' como '{correct_pronunciation}'"
+                }
+            pronunciations[real_word] = {
+                'correct': correct_pronunciation,
+                'user': user_pronunciation
+            }
+        else:
+            diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+            incorrect_count += 1
+            feedback[real_word] = {
+                'correct': transliterate_and_convert(real_word),
+                'user': '',
+                'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert(real_word)}'"
+            }
+            pronunciations[real_word] = {
+                'correct': transliterate_and_convert(real_word),
+                'user': ''
+            }
+
+    diff_html = ' '.join(diff_html)
+    total_words = correct_count + incorrect_count
+    ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
+    completeness_score = (len(words_estimated) / len(words_real)) * 100
+    performance_data.append({
+        'date': pd.Timestamp.now().strftime('%Y-%m-%d'),
+        'correct': correct_count,
+        'incorrect': incorrect_count,
+        'ratio': ratio,
+        'completeness_score': completeness_score,
+        'sentence': text
+    })
+    save_performance_data(performance_data)
+
+    if category != 'random':
+        user_category_progress = user_progress.get(category, {'sentences_done': [], 'performance': []})
+        if text not in user_category_progress['sentences_done']:
+            user_category_progress['sentences_done'].append(text)
+        user_category_progress['performance'].append({
+            'sentence': text,
+            'ratio': ratio,
+            'completeness_score': completeness_score
+        })
+        user_progress[category] = user_category_progress
+        save_user_progress(user_progress)
+
+    return jsonify({
+        'ratio': f"{ratio:.2f}",
+        'diff_html': diff_html,
+        'pronunciations': pronunciations,
+        'feedback': feedback,
+        'completeness_score': f"{completeness_score:.2f}"
+    })
 
 @app.route('/speak', methods=['POST'])
 def speak():
@@ -486,5 +484,6 @@ def get_progress():
         }
     return jsonify(progress_data)
 
+# Inicialização e execução do aplicativo
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
