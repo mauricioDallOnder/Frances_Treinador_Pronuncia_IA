@@ -140,6 +140,13 @@
                             <option value="Accepter_ou_refuser_une_invitation">Accepter ou refuser une invitation
                             </option>
                         </optgroup>
+                    <!-- Vie Sportive -->
+                        <optgroup label="Pratique sportive">
+                            <option value="parler_de_sa_pratique_sportive">Parler de sa pratique sportive</option>
+                            <option value="donner_un_avis_sur_les_JO">Donner un avis sur les JO</option>
+                            <option value="donner_un_conseil_sur_le_sport">donner un conseil sur le sport</option>
+                            <option value="recommander_un_sport">recommander un sport</option>
+                        </optgroup>
 
                     </select>
                 </div>
@@ -550,39 +557,44 @@
 
 
         function generateSentence() {
-            let category = document.getElementById('category').value;
-            disableButtons();
-            showMessage('Génération de la phrase en cours...');
+        let category = document.getElementById('category').value;
+        disableButtons();
+        showMessage('Génération de la phrase en cours...');
 
-            fetch('/get_sentence', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'category=' + encodeURIComponent(category)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else if (data.message) {
-                        alert(`${data.message}\nTaux moyen de réussite de la prononciation : ${data.average_ratio}%\nTaux moyen de complétude : ${data.average_completeness}%`);
-                    } else {
-                        document.getElementById('text').value = data.fr_sentence;
-                        document.getElementById('text').dataset.category = data.category;
-                        fetchPronunciation(data.fr_sentence);
-                        updateCategoryProgress();
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la génération de la phrase.');
-                })
-                .finally(() => {
-                    enableButtons();
-                    hideMessage();
-                });
-        }
+        fetch('/get_sentence', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'category=' + encodeURIComponent(category)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro na resposta da API');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else if (data.message) {
+                alert(`${data.message}\nTaux moyen de réussite de la prononciation : ${data.average_ratio}%\nTaux moyen de complétude : ${data.average_completeness}%`);
+            } else {
+                document.getElementById('text').value = data.fr_sentence;
+                document.getElementById('text').dataset.category = data.category;
+                fetchPronunciation(data.fr_sentence);
+                updateCategoryProgress();
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de la génération de la phrase.');
+        })
+        .finally(() => {
+            enableButtons();
+            hideMessage();
+        });
+    }
 
 
         document.addEventListener('click', function (event) {
