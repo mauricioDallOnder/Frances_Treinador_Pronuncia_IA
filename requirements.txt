@@ -20,3 +20,4 @@ soxr
 Levenshtein
 matplotlib
 jellyfish
+SentencePiece
