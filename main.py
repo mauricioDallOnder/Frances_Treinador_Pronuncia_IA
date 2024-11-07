@@ -24,7 +24,7 @@ import jellyfish
 from concurrent.futures import ThreadPoolExecutor
 from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 
-app = Flask(__name__, template_folder="./templates", static_folder="./static")
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Variáveis globais para modelos
 model, processor, translation_model, tokenizer = None, None, None, None
