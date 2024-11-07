@@ -111,25 +111,25 @@ french_to_portuguese_phonemes = {
     'e': 'ê',
     'ɛ': 'é',
     'a': 'a',
-    'ɑ': 'a',
+    'ɑ': 'á',  # Para diferenciar de 'a' aberto
     'ɔ': 'ó',
     'o': 'ô',
     'u': 'u',
-    'y': 'u',
-    'ø': 'e',
-    'œ': 'é',
-    'ə': 'e',
+    'y': 'u',  # Ou 'i' se preferir
+    'ø': 'e',  # Ou 'ê'
+    'œ': 'é',  # Ou 'éu'
+    'ə': '',   # Omitir o schwa
 
     # Vogais nasais
-    'ɛ̃': 'ẽ',
-    'ɑ̃': 'ã',
-    'ɔ̃': 'õ',
-    'œ̃': 'ũ',
+    'ɛ̃': 'ẽ',  # Exemplo: 'vin' -> 'vẽ'
+    'ɑ̃': 'ã',  # Exemplo: 'blanc' -> 'blã'
+    'ɔ̃': 'õ',  # Exemplo: 'bon' -> 'bõ'
+    'œ̃': 'ũ',  # Exemplo: 'un' -> 'ũ'
 
     # Semivogais
-    'j': 'i',
-    'w': 'u',
-    'ɥ': 'ui',
+    'j': 'i',   # Semivogal palatal
+    'w': 'u',   # Semivogal labiovelar
+    'ɥ': 'ü',   # Aproximação para 'u' frontal
 
     # Consoantes
     'b': 'b',
@@ -142,15 +142,15 @@ french_to_portuguese_phonemes = {
     'm': 'm',
     'n': 'n',
     'p': 'p',
-    'ʁ': 'rr',
-    'r': 'rr',
+    'ʁ': 'rr',  # Vibrante múltipla
+    'r': 'r',   # Vibrante simples
     's': 's',
     't': 't',
     'v': 'v',
     'z': 'z',
     'ʃ': 'ch',
     'ɲ': 'nh',
-    'ŋ': 'n',
+    'ŋ': 'ng',  # Exemplo em final de palavras
 }
 
 # Função de Tradução
@@ -178,20 +178,33 @@ def get_pronunciation(word):
     pronunciation = epi.transliterate(word_clean)
     return pronunciation
 
+# Atualização da função omit_schwa
 def omit_schwa(pronunciation):
     # Remove o schwa ('ə') em finais de palavra ou onde for apropriado
+    # Exemplo: 'pə' -> 'p' se for final de palavra
     pronunciation = re.sub(r'ə\b', '', pronunciation)
+    # Remover schwa entre consoantes
+    pronunciation = re.sub(r'ə(?=[bcdfghjklmnpqrstvwxyz])', '', pronunciation)
     return pronunciation
 
+# Melhorar a função normalize_vowels
 def normalize_vowels(pronunciation):
-    # Normaliza vogais para consistência, se necessário
-    # Exemplo: substitui variantes de 'œ' por 'ø'
+    # Normaliza vogais para consistência
     pronunciation = pronunciation.replace('œ', 'ø')
+    pronunciation = pronunciation.replace('ɑ', 'a')
+    pronunciation = pronunciation.replace('ɥ', 'ɥ')
+    # Adicionar mais normalizações conforme necessário
     return pronunciation
 
+# Implementação da função handle_special_cases
 def handle_special_cases(pronunciation):
-    # Regras especiais para contextos específicos
-    # Exemplo: ajustar pronúncias específicas de certas palavras
+    # Exemplo de casos especiais
+    # Substituir 'wa' por 'ua'
+    pronunciation = pronunciation.replace('wa', 'ua')
+    # Substituir 'ɥi' por 'ui'
+    pronunciation = pronunciation.replace('ɥi', 'ui')
+    # Tratar casos de 'liquid consonants' seguidas de semivogais
+    # Adicionar mais regras conforme necessário
     return pronunciation
 
 def convert_pronunciation_to_portuguese(pronunciation):
@@ -209,6 +222,9 @@ def convert_pronunciation_to_portuguese(pronunciation):
 
 def transliterate_and_convert(word):
     pronunciation = get_pronunciation(word)
+    pronunciation = omit_schwa(pronunciation)
+    pronunciation = normalize_vowels(pronunciation)
+    pronunciation = handle_special_cases(pronunciation)
     pronunciation_pt = convert_pronunciation_to_portuguese(pronunciation)
     return pronunciation_pt
 
