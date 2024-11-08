@@ -3,6 +3,7 @@ sys.setrecursionlimit(10000)
 import numpy as np
 import torch
 import torchaudio
+
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 from flask import Flask, request, render_template, jsonify, send_file
 import matplotlib.pyplot as plt
@@ -23,10 +24,11 @@ import jellyfish
 from concurrent.futures import ThreadPoolExecutor
 from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 
+
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Variáveis globais para modelos
-model, processor, translation_model, tokenizer = None, None, None, None
+model_asr, processor_asr, translation_model, tokenizer = None, None, None, None
 
 # Executor para processamento assíncrono
 executor = ThreadPoolExecutor(max_workers=1)
@@ -57,10 +59,9 @@ except Exception as e:
     print(f"Erro ao carregar frases_categorias.pickle: {e}")
     categorized_sentences = {}
 
-# Carregar o Modelo de SST Francês atualizado
-model_name = "jonatasgrosman/wav2vec2-large-xlsr-53-french"
-processor = Wav2Vec2Processor.from_pretrained(model_name)
-model = Wav2Vec2ForCTC.from_pretrained(model_name)
+# Carregar o Modelo ASR Wav2Vec2 para Francês
+processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
+model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 
 # Modelo para tradução
 translation_model_name = 'facebook/m2m100_418M'
@@ -95,7 +96,7 @@ def save_user_progress(progress):
 user_progress = load_user_progress()
 
 ##-----------------------------------------------------------------------------------------------------------
-# Iniciar o epitran e funções de tradução
+# Iniciar o Epitran e funções de tradução
 
 # Inicializar Epitran para Francês
 epi = epitran.Epitran('fra-Latn')
@@ -104,32 +105,31 @@ source_language = 'fr'  # Francês
 target_language = 'pt'  # Português
 
 # Mapeamento atualizado de fonemas franceses para português
-
 french_to_portuguese_phonemes = {
     # Vogais orais
     'i': 'i',
     'e': 'e',
     'ɛ': 'é',
     'a': 'a',
-    'ɑ': 'a',    # Mapeado para 'a' pois o português não diferencia 'a' e 'ɑ'
+    'ɑ': 'a',
     'ɔ': 'ó',
     'o': 'ô',
     'u': 'u',
-    'y': 'u',    # Aproximação, 'y' em francês é [y], que não existe em português
-    'ø': 'eu',   # Aproximação para 'eu'
-    'œ': 'é',    # Pode ser difícil mapear, mas 'é' é uma aproximação
-    'ə': 'e',    # O schwa é mapeado para 'e' para preservar a pronúncia
+    'y': 'u',
+    'ø': 'eu',
+    'œ': 'é',
+    'ə': 'e',
 
     # Vogais nasais
     'ɛ̃': 'ẽ',
     'ɑ̃': 'ã',
     'ɔ̃': 'õ',
-    'œ̃': 'ũ',   # Representa o som nasal em 'un'
+    'œ̃': 'ũ',
 
     # Semivogais
     'j': 'i',
     'w': 'u',
-    'ɥ': 'ü',    # Aproximação para 'ü'
+    'ɥ': 'ü',
 
     # Consoantes
     'b': 'b',
@@ -142,21 +142,18 @@ french_to_portuguese_phonemes = {
     'm': 'm',
     'n': 'n',
     'p': 'p',
-    'ʁ': 'r',    # Em português, podemos representar como 'r'
-    'r': 'r',
+    'ʁ': 'r',
     's': 's',
     't': 't',
-    'v': 'v',    # Certificar-se de que 'v' está incluído
+    'v': 'v',
     'z': 'z',
     'ʃ': 'ch',
     'ɲ': 'nh',
     'ŋ': 'ng',
-    # Adicionar o símbolo para 'h' aspirado, se necessário
+    'lɛ̃': 'ã'
 }
 
-
-
-#palavras com h aspirado
+# Lista de palavras com 'h' aspirado
 h_aspirate_words = [
     "hache", "hagard", "haie", "haillon", "haine", "haïr", "hall", "halo", "halte", "hamac",
     "hamburger", "hameau", "hamster", "hanche", "handicap", "hangar", "hanter", "happer",
@@ -165,9 +162,8 @@ h_aspirate_words = [
     "héros", "hêtre", "heurter", "hibou", "hic", "hideur", "hiérarchie", "hiéroglyphe", "hippie",
     "hisser", "hocher", "hockey", "hollande", "homard", "honte", "hoquet", "horde", "hors",
     "hotte", "houblon", "houle", "housse", "huard", "hublot", "huche", "huer", "huit", "humer",
-    "hurler", "huron", "husky", "hutte", "hyène",'héros', 'haricot', 'honte', 'hache', 'haut', 'hors', 'huit', 'hurler'
+    "hurler", "huron", "husky", "hutte", "hyène"
 ]
-
 
 # Função de Tradução
 def translate_to_portuguese(text):
@@ -184,56 +180,36 @@ def translate_to_portuguese(text):
         print(f"Erro na tradução: {e}")
         return "Tradução indisponível."
 
-# Função para obter pronúncia fonética
-def get_french_phonetic(word):
-    return epi.transliterate(word)
-
-
-
+# Funções de pronúncia e transcrição
 def get_pronunciation(word):
     pronunciation = epi.transliterate(word)
     return pronunciation
 
-
-
-def omit_schwa(pronunciation, word):
-    # Não remover schwa em palavras monossilábicas
-    if len(word) <= 3:  # Considerar palavras curtas como monossilábicas
-        return pronunciation
-    # Remover schwa apenas em finais de palavra
-    pronunciation = re.sub(r'ə$', '', pronunciation)
+def remove_silent_endings(pronunciation, word):
+    # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
+    if word.endswith('ent') and pronunciation.endswith('t'):
+        pronunciation = pronunciation[:-1]
+    # Adicionar outras regras conforme necessário
     return pronunciation
 
+def transliterate_and_convert_sentence(sentence):
+    words = sentence.split()
+    # Tratar apóstrofos
+    words = handle_apostrophes(words)
+    pronunciations = [get_pronunciation(word) for word in words]
+    # Aplicar liaisons
+    pronunciations = apply_liaisons(words, pronunciations)
+    # Remover terminações silenciosas para cada palavra e pronúncia
+    pronunciations = [remove_silent_endings(pron, word) for pron, word in zip(pronunciations, words)]
+    # Converter cada pronúncia para português
+    pronunciations_pt = [
+        convert_pronunciation_to_portuguese(pron)
+        for pron in pronunciations
+    ]
+    return ' '.join(pronunciations_pt)
 
-
-def normalize_vowels(pronunciation):
-    # Normaliza vogais para consistência
-    pronunciation = pronunciation.replace('ɛ', 'ɛ')
-    pronunciation = pronunciation.replace('ə', 'ə')
-    pronunciation = pronunciation.replace('ø', 'ø')
-    pronunciation = pronunciation.replace('œ', 'ø')
-    pronunciation = pronunciation.replace('ɑ', 'a')
-    pronunciation = pronunciation.replace('ɥ', 'ɥ')
-    # Adicionar mais normalizações conforme necessário
-    return pronunciation
-
-def handle_special_cases(pronunciation):
-    # Tratar casos especiais
-    pronunciation = pronunciation.replace('wa', 'ua')
-    pronunciation = pronunciation.replace('ɥi', 'ui')
-    # Ajustar 'j' seguido de vogal para 'i' + vogal
-    pronunciation = re.sub(r'j([aeiou])', r'i\1', pronunciation)
-    # Outros ajustes conforme necessário
-    return pronunciation
-
-
-
-def convert_pronunciation_to_portuguese(pronunciation, word):
-    pronunciation = omit_schwa(pronunciation, word)
-    pronunciation = normalize_vowels(pronunciation)
-    pronunciation = handle_special_cases(pronunciation)
+def convert_pronunciation_to_portuguese(pronunciation):
     # Substituir símbolos fonéticos usando o mapeamento
-    # Ordenar os fonemas por tamanho decrescente para evitar conflitos
     sorted_phonemes = sorted(french_to_portuguese_phonemes.keys(), key=len, reverse=True)
     for phoneme in sorted_phonemes:
         pronunciation = pronunciation.replace(phoneme, french_to_portuguese_phonemes[phoneme])
@@ -261,7 +237,6 @@ def handle_apostrophes(words_list):
             new_words.append(word)
     return new_words
 
-
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
     for i in range(len(words_list) - 1):
@@ -273,50 +248,43 @@ def apply_liaisons(words_list, pronunciations):
         next_word_clean = re.sub(r"[^a-zA-Z']", '', next_word).lower()
         h_aspirate = next_word_clean in h_aspirate_words
 
-
-        # Verificar se a última letra da palavra atual é uma consoante normalmente muda
-        if current_word[-1] in ['s', 'x', 'z', 't', 'n', 'r', 'p', 'd', 'g']:
-            if re.match(r"^[aeiouyâêîôûéèëïüÿæœh]", next_word, re.IGNORECASE):
-                if current_word[-1] in ['s', 'x', 'z']:
-                    liaison_sound = 'z'
-                elif current_word[-1] == 'd':
-                    liaison_sound = 't'
-                elif current_word[-1] == 'g':
-                    liaison_sound = 'k'
-                elif current_word[-1] == 't':
-                    liaison_sound = 't'
-                elif current_word[-1] == 'n':
-                    liaison_sound = 'n'
-                elif current_word[-1] == 'p':
-                    liaison_sound = 'p'
-                elif current_word[-1] == 'r':
-                    liaison_sound = 'ʁ'
-                else:
-                    liaison_sound = ''
-                current_pron += liaison_sound
+        # Verificar se a próxima palavra começa com vogal ou 'h' mudo
+        if re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE) and not h_aspirate:
+            # Aplicar liaison
+            if current_word.lower() == "les":
+                current_pron = current_pron.rstrip('e') + 'z'
+            elif current_word[-1] in ['s', 'x', 'z']:
+                current_pron = current_pron + 'z'
+            elif current_word[-1] == 'd':
+                current_pron = current_pron + 't'
+            elif current_word[-1] == 'g':
+                current_pron = current_pron + 'k'
+            elif current_word[-1] == 't':
+                current_pron = current_pron + 't'
+            elif current_word[-1] == 'n':
+                current_pron = current_pron + 'n'
+            elif current_word[-1] == 'p':
+                current_pron = current_pron + 'p'
+            elif current_word[-1] == 'r':
+                current_pron = current_pron + 'r'
+        # Caso contrário, não aplica liaison
         new_pronunciations.append(current_pron)
     # Adicionar a última pronúncia
     new_pronunciations.append(pronunciations[-1])
     return new_pronunciations
 
+def normalize_text(text):
+    text = text.lower()
+    text = text.replace("’", "'")
+    # Manter apóstrofos dentro das palavras e remover outros caracteres especiais
+    text = re.sub(r"[^\w\s']", '', text)
+    # Garantir que não haja espaços desnecessários ao redor dos apóstrofos
+    text = re.sub(r"\s+'", "'", text)
+    text = re.sub(r"'\s+", "'", text)
+    return text.strip()
 
-
-def transliterate_and_convert_sentence(sentence):
-    words = sentence.split()
-    # Tratar apóstrofos
-    words = handle_apostrophes(words)
-    pronunciations = [get_pronunciation(word) for word in words]
-    # Aplicar liaisons
-    pronunciations = apply_liaisons(words, pronunciations)
-    # Converter cada pronúncia para português, passando a palavra original para omit_schwa
-    pronunciations_pt = [
-        convert_pronunciation_to_portuguese(pron, word)
-        for pron, word in zip(pronunciations, words)
-    ]
-    return ' '.join(pronunciations_pt)
-
-
-
+def remove_punctuation_end(sentence):
+    return sentence.rstrip('.')
 
 def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Calcular distância Damerau-Levenshtein normalizada
@@ -334,28 +302,12 @@ def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Verificar se a pontuação combinada atinge o limite ajustado
     return combined_score >= smooth_threshold
 
-# Normalização de texto para comparação
-def normalize_text(text):
-    text = text.lower()
-    text = text.replace("’", "'")
-    # Manter apóstrofos dentro das palavras e remover outros caracteres especiais
-    text = re.sub(r"[^\w\s']", '', text)
-    # Garantir que não haja espaços desnecessários ao redor dos apóstrofos
-    text = re.sub(r"\s+'", "'", text)
-    text = re.sub(r"'\s+", "'", text)
-    return text.strip()
-
-def remove_punctuation_end(sentence):
-    return sentence.rstrip('.')
-
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Processamento de áudio:
-
 # Função para melhorar a qualidade do áudio com redução de ruído
 def reduce_noise(waveform, sample_rate):
     return nr.reduce_noise(y=waveform, sr=sample_rate)
 
-# Função de processamento de áudio
 def process_audio(file_path):
     try:
         with wave.open(file_path, 'rb') as wav_file:
@@ -366,14 +318,13 @@ def process_audio(file_path):
         waveform_tensor = torch.tensor(waveform, dtype=torch.float32).unsqueeze(0)
         if sample_rate != 16000:
             waveform_tensor = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform_tensor)
-        inputs = processor(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
+        inputs = processor_asr(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
         with torch.no_grad():
-            logits = model(inputs.input_values).logits
+            logits = model_asr(inputs.input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
-        return processor.batch_decode(predicted_ids)[0]
+        return processor_asr.batch_decode(predicted_ids)[0]
     finally:
-        os.remove(file_path)
-
+        os.remove(file_path)  # O arquivo é removido aqui
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Rotas de API
 @app.route('/')
@@ -445,12 +396,13 @@ def upload():
     file = request.files['audio']
     text = request.form['text']
     category = request.form.get('category', 'random')
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
         tmp_file.write(file.read())
         tmp_file_path = tmp_file.name
 
-    # Executar processamento assíncrono de áudio
-    transcription = executor.submit(process_audio, tmp_file_path).result()
+    # Executar processamento de áudio usando o modelo ASR
+    transcription = process_audio(tmp_file_path)
 
     normalized_transcription = normalize_text(transcription)
     normalized_text = normalize_text(text)
