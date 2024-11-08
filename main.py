@@ -64,7 +64,7 @@ processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-
 model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 
 # Modelo para tradução
-translation_model_name = 'facebook/m2m100_418M'
+translation_model_name = 'facebook/m2m100_1.2B'
 tokenizer = M2M100Tokenizer.from_pretrained(translation_model_name)
 translation_model = M2M100ForConditionalGeneration.from_pretrained(translation_model_name)
 
