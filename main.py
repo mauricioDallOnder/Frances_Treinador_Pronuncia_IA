@@ -63,10 +63,7 @@ except Exception as e:
 processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 
-# Modelo para tradução
-translation_model_name = 'facebook/m2m100_1.2B'
-tokenizer = M2M100Tokenizer.from_pretrained(translation_model_name)
-translation_model = M2M100ForConditionalGeneration.from_pretrained(translation_model_name)
+
 
 # Carregar progresso do usuário
 def load_performance_data():
@@ -165,20 +162,7 @@ h_aspirate_words = [
     "hurler", "huron", "husky", "hutte", "hyène"
 ]
 
-# Função de Tradução
-def translate_to_portuguese(text):
-    try:
-        tokenizer.src_lang = source_language
-        encoded = tokenizer(text, return_tensors='pt')
-        generated_tokens = translation_model.generate(
-            **encoded,
-            forced_bos_token_id=tokenizer.get_lang_id(target_language)
-        )
-        translated_text = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)[0]
-        return translated_text
-    except Exception as e:
-        print(f"Erro na tradução: {e}")
-        return "Tradução indisponível."
+
 
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
@@ -340,11 +324,6 @@ def pronounce():
     pronunciation = transliterate_and_convert_sentence(text)
     return jsonify({'pronunciations': pronunciation})
 
-@app.route('/translate', methods=['POST'])
-def translate():
-    text = request.form['text']
-    translated_text = translate_to_portuguese(text)
-    return jsonify({'translation': translated_text})
 
 @app.route('/get_sentence', methods=['POST'])
 def get_sentence():
@@ -491,43 +470,7 @@ def speak():
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
 
-@app.route('/performance', methods=['GET'])
-def performance():
-    if not performance_data:
-        return "Nenhum dado de desempenho disponível.", 204
-    df = pd.DataFrame(performance_data)
-    if 'date' not in df.columns:
-        return "Dados de desempenho inválidos.", 500
-    grouped = df.groupby('date').agg({
-        'ratio': 'mean',
-        'completeness_score': 'mean'
-    }).reset_index()
 
-    dates = grouped['date']
-    ratios = grouped['ratio']
-    completeness_scores = grouped['completeness_score']
-
-    x = np.arange(len(dates))  # the label locations
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(dates, ratios, marker='o', label='Taxa de Acerto na Pronúncia (%)')
-    ax.plot(dates, completeness_scores, marker='x', label='Taxa de Completude (%)')
-
-    ax.set_xlabel('Data')
-    ax.set_ylabel('Percentagem')
-    ax.set_title('Desempenho Diário')
-    ax.set_xticks(x)
-    ax.set_xticklabels(dates, rotation=45)
-    ax.set_ylim(0, 100)
-    ax.legend()
-
-    fig.tight_layout()
-
-    graph_path = 'static/performance_graph.png'
-    plt.savefig(graph_path, bbox_inches='tight')
-    plt.close()
-
-    return send_file(graph_path, mimetype='image/png')
 
 @app.route('/get_progress', methods=['GET'])
 def get_progress():
@@ -542,7 +485,6 @@ def get_progress():
         }
     return jsonify(progress_data)
 
-
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000))
+    app.run(debug=True)
