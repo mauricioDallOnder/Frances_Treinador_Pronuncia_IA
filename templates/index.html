@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
@@ -21,10 +21,7 @@
                 <div class="mb-3">
                     <label for="text" class="form-label">Écrivez ou générez un texte ci-dessous :</label>
                     <textarea class="form-control" id="text" name="text"></textarea>
-                    <div class="mt-3">
-                        <label for="translation" class="form-label">Tradução:</label>
-                        <p id="translation"></p>
-                    </div>
+
                     <div class="pronunciation-feedback mt-4">
                         <label for="translation" class="form-label">Pronuncia:</label>
                         <h3 id="pronunciation"></h3>
@@ -34,22 +31,23 @@
                     <label for="category" class="form-label">Sélectionnez la catégorie :</label>
                     <select class="form-select" id="category" name="category">
                         <!----prononciation----->
-                        
-                   
-    <optgroup label="Prononciation">
-        <option value="Combinaisons_spécifiques_et_leurs_bruits_nasaux">Combinaisons spécifiques et leurs bruits nasaux</option>
-        <option value="Combinaisons_de_voyelles_qui_créent_des_sons_nasaux">Combinaisons de voyelles qui créent des sons nasaux</option>
-        <option value="Cas_courants_et_pièges">Cas courants et pièges</option>
-        <option value="Accents_et_comment_ils_affectent_la_prononciation">Accents et comment ils affectent la prononciation</option>
-        <option value="Diphtongues_et_sons_complexes">Diphtongues et sons complexes</option>
-        <option value="Le_son_de_R">Le son de R</option>
-        <option value="Consonnes_doublées">Consonnes doublées</option>
-        <option value="Liaison">Liaison</option>
-        <option value="Voyelles_et_diphtongues">Voyelles et diphtongues</option>
-        <option value="Le_E_muet">Le E muet</option>
-        <option value="Sons_nasaux">Sons nasaux</option>
-        <option value="Les_lettres_muettes">Les lettres muettes</option>
-    </optgroup>
+                        <optgroup label="Prononciation">
+                            <option value="Combinaisons_spécifiques_et_leurs_bruits_nasaux">Combinaisons spécifiques et
+                                leurs bruits nasaux</option>
+                            <option value="Combinaisons_de_voyelles_qui_créent_des_sons_nasaux">Combinaisons de voyelles
+                                qui créent des sons nasaux</option>
+                            <option value="Cas_courants_et_pièges">Cas courants et pièges</option>
+                            <option value="Accents_et_comment_ils_affectent_la_prononciation">Accents et comment ils
+                                affectent la prononciation</option>
+                            <option value="Diphtongues_et_sons_complexes">Diphtongues et sons complexes</option>
+                            <option value="Le_son_de_R">Le son de R</option>
+                            <option value="Consonnes_doublées">Consonnes doublées</option>
+                            <option value="Liaison">Liaison</option>
+                            <option value="Voyelles_et_diphtongues">Voyelles et diphtongues</option>
+                            <option value="Le_E_muet">Le E muet</option>
+                            <option value="Sons_nasaux">Sons nasaux</option>
+                            <option value="Les_lettres_muettes">Les lettres muettes</option>
+                        </optgroup>
 
 
                         <!-- Cuisine et Alimentation -->
@@ -158,7 +156,7 @@
                             <option value="Accepter_ou_refuser_une_invitation">Accepter ou refuser une invitation
                             </option>
                         </optgroup>
-                    <!-- Vie Sportive -->
+                        <!-- Vie Sportive -->
                         <optgroup label="Pratique sportive">
                             <option value="parler_de_sa_pratique_sportive">Parler de sa pratique sportive</option>
                             <option value="donner_un_avis_sur_les_JO">Donner un avis sur les JO</option>
@@ -171,14 +169,18 @@
                 <div class="d-grid gap-2">
                     <p id="statusMessage"
                         style="display: none; font-weight: bold; color: red;text-align: center; font-weight: 12px;"></p>
-                    <button class="btn btn-danger" id="recordButton" onclick="toggleRecording()">
-                        <i class="material-icons" id="recordIcon">mic</i>
-                    </button>
-                    <button class="btn btn-secondary" id="speakButton" onclick="speakText()">Écouter le texte</button>
                     <button class="btn btn-success" id="generateButton" onclick="generateSentence()">Générer une
                         phrase</button>
-                    <button class="btn btn-primary" id="translateButton" onclick="translateText()">Traduire le
-                        texte</button>
+                    <button class="btn btn-danger" id="recordButton" onclick="toggleRecording()">
+                        <span style="display: flex;align-items: center; justify-content: center;">
+                            Parler
+                            <i class="material-icons" id="recordIcon">mic</i>
+                        </span>
+
+                    </button>
+                    <button class="btn btn-secondary" id="speakButton" onclick="speakText()">Écouter le texte</button>
+
+
                 </div>
                 <!-- Elemento para exibir as mensagens de status -->
 
@@ -195,10 +197,7 @@
                     <p>Taux d’achèvement: <span id="completeness"></span>%</p>
                 </div>
                 <div id="audioContainer" class="mt-4"></div>
-                <div class="mt-4">
-                    <h3>Graphiques de performances:</h3>
-                    <img id="performanceGraph" src="/performance" class="img-fluid" alt="Gráfico de Desempenho">
-                </div>
+
             </div>
             <div class="feedback-box" id="feedbackBox">
                 <p id="feedbackContent">Cliquez sur un mot pour voir sa prononciation.</p>
@@ -212,7 +211,7 @@
             const categorySelect = document.getElementById('category');
             const options = categorySelect.options;
             const randomIndex = Math.floor(Math.random() * options.length);
-            
+
             // Define uma opção aleatória
             categorySelect.selectedIndex = randomIndex;
 
@@ -220,20 +219,20 @@
             updateCategoryProgress();
         });
 
-         document.getElementById('category').addEventListener('change', updateCategoryProgress);
+        document.getElementById('category').addEventListener('change', updateCategoryProgress);
 
         // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
         function disableButtons() {
             document.getElementById('speakButton').disabled = true;
             document.getElementById('generateButton').disabled = true;
-            document.getElementById('translateButton').disabled = true;
+
             document.getElementById('recordButton').disabled = true;
         }
 
         function enableButtons() {
             document.getElementById('speakButton').disabled = false;
             document.getElementById('generateButton').disabled = false;
-            document.getElementById('translateButton').disabled = false;
+
             document.getElementById('recordButton').disabled = false;
         }
 
@@ -589,44 +588,44 @@
 
 
         function generateSentence() {
-        let category = document.getElementById('category').value;
-        disableButtons();
-        showMessage('Génération de la phrase en cours...');
+            let category = document.getElementById('category').value;
+            disableButtons();
+            showMessage('Génération de la phrase en cours...');
 
-        fetch('/get_sentence', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'category=' + encodeURIComponent(category)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na resposta da API');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-            } else if (data.message) {
-                alert(`${data.message}\nTaux moyen de réussite de la prononciation : ${data.average_ratio}%\nTaux moyen de complétude : ${data.average_completeness}%`);
-            } else {
-                document.getElementById('text').value = data.fr_sentence;
-                document.getElementById('text').dataset.category = data.category;
-                fetchPronunciation(data.fr_sentence);
-                updateCategoryProgress();
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Une erreur est survenue lors de la génération de la phrase.');
-        })
-        .finally(() => {
-            enableButtons();
-            hideMessage();
-        });
-    }
+            fetch('/get_sentence', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'category=' + encodeURIComponent(category)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na resposta da API');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else if (data.message) {
+                        alert(`${data.message}\nTaux moyen de réussite de la prononciation : ${data.average_ratio}%\nTaux moyen de complétude : ${data.average_completeness}%`);
+                    } else {
+                        document.getElementById('text').value = data.fr_sentence;
+                        document.getElementById('text').dataset.category = data.category;
+                        fetchPronunciation(data.fr_sentence);
+                        updateCategoryProgress();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Une erreur est survenue lors de la génération de la phrase.');
+                })
+                .finally(() => {
+                    enableButtons();
+                    hideMessage();
+                });
+        }
 
 
         document.addEventListener('click', function (event) {
