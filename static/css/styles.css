@@ -51,8 +51,8 @@ body {
   color: red;
 }
 .textarea {
-  width: 100%;
-  height: 100%;
+  width: fit-content;
+  height: fit-content;
   resize: none; /* Impede o redimensionamento manual */
   overflow: hidden; /* Remove todas as barras de rolagem */
   font-size: 16px;
@@ -69,6 +69,7 @@ body {
   .form-control {
     width: 100%;
     font-size: 16px;
+    height: 100px;
   }
 
   /* Ajusta o espaçamento e alinhamento para evitar sobreposição */
