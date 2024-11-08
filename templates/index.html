@@ -35,7 +35,7 @@
                     <select class="form-select" id="category" name="category">
                         <!----prononciation----->
                         
-                    <select name="Prononciationn">
+                   
     <optgroup label="Prononciation">
         <option value="Combinaisons_spécifiques_et_leurs_bruits_nasaux">Combinaisons spécifiques et leurs bruits nasaux</option>
         <option value="Combinaisons_de_voyelles_qui_créent_des_sons_nasaux">Combinaisons de voyelles qui créent des sons nasaux</option>
@@ -50,7 +50,7 @@
         <option value="Sons_nasaux">Sons nasaux</option>
         <option value="Les_lettres_muettes">Les lettres muettes</option>
     </optgroup>
-</select>
+
 
                         <!-- Cuisine et Alimentation -->
                         <optgroup label="Cuisine et Alimentation">
@@ -207,6 +207,20 @@
     </div>
 
     <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const categorySelect = document.getElementById('category');
+            const options = categorySelect.options;
+            const randomIndex = Math.floor(Math.random() * options.length);
+            
+            // Define uma opção aleatória
+            categorySelect.selectedIndex = randomIndex;
+
+            // Atualiza o progresso da categoria com a seleção aleatória
+            updateCategoryProgress();
+        });
+
+         document.getElementById('category').addEventListener('change', updateCategoryProgress);
 
         // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
         function disableButtons() {
