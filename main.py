@@ -1,4 +1,3 @@
-import asyncio
 import sys
 sys.setrecursionlimit(10000)
 import numpy as np
@@ -105,31 +104,32 @@ source_language = 'fr'  # Francês
 target_language = 'pt'  # Português
 
 # Mapeamento atualizado de fonemas franceses para português
+
 french_to_portuguese_phonemes = {
     # Vogais orais
     'i': 'i',
-    'e': 'ê',
+    'e': 'e',
     'ɛ': 'é',
     'a': 'a',
-    'ɑ': 'á',  # Para diferenciar de 'a' aberto
+    'ɑ': 'a',    # Mapeado para 'a' pois o português não diferencia 'a' e 'ɑ'
     'ɔ': 'ó',
     'o': 'ô',
     'u': 'u',
-    'y': 'u',  # Ou 'i' se preferir
-    'ø': 'e',  # Ou 'ê'
-    'œ': 'é',  # Ou 'éu'
-    'ə': '',   # Omitir o schwa
+    'y': 'u',    # Aproximação, 'y' em francês é [y], que não existe em português
+    'ø': 'eu',   # Aproximação para 'eu'
+    'œ': 'é',    # Pode ser difícil mapear, mas 'é' é uma aproximação
+    'ə': 'e',    # O schwa é mapeado para 'e' para preservar a pronúncia
 
     # Vogais nasais
-    'ɛ̃': 'ẽ',  # Exemplo: 'vin' -> 'vẽ'
-    'ɑ̃': 'ã',  # Exemplo: 'blanc' -> 'blã'
-    'ɔ̃': 'õ',  # Exemplo: 'bon' -> 'bõ'
-    'œ̃': 'ũ',  # Exemplo: 'un' -> 'ũ'
+    'ɛ̃': 'ẽ',
+    'ɑ̃': 'ã',
+    'ɔ̃': 'õ',
+    'œ̃': 'ũ',   # Representa o som nasal em 'un'
 
     # Semivogais
-    'j': 'i',   # Semivogal palatal
-    'w': 'u',   # Semivogal labiovelar
-    'ɥ': 'ü',   # Aproximação para 'u' frontal
+    'j': 'i',
+    'w': 'u',
+    'ɥ': 'ü',    # Aproximação para 'ü'
 
     # Consoantes
     'b': 'b',
@@ -142,16 +142,32 @@ french_to_portuguese_phonemes = {
     'm': 'm',
     'n': 'n',
     'p': 'p',
-    'ʁ': 'rr',  # Vibrante múltipla
-    'r': 'r',   # Vibrante simples
+    'ʁ': 'r',    # Em português, podemos representar como 'r'
+    'r': 'r',
     's': 's',
     't': 't',
-    'v': 'v',
+    'v': 'v',    # Certificar-se de que 'v' está incluído
     'z': 'z',
     'ʃ': 'ch',
     'ɲ': 'nh',
-    'ŋ': 'ng',  # Exemplo em final de palavras
+    'ŋ': 'ng',
+    # Adicionar o símbolo para 'h' aspirado, se necessário
 }
+
+
+
+#palavras com h aspirado
+h_aspirate_words = [
+    "hache", "hagard", "haie", "haillon", "haine", "haïr", "hall", "halo", "halte", "hamac",
+    "hamburger", "hameau", "hamster", "hanche", "handicap", "hangar", "hanter", "happer",
+    "harceler", "hardi", "harem", "hareng", "harfang", "hargne", "haricot", "harnais", "harpe",
+    "hasard", "hâte", "hausse", "haut", "havre", "hennir", "hérisser", "hernie", "héron",
+    "héros", "hêtre", "heurter", "hibou", "hic", "hideur", "hiérarchie", "hiéroglyphe", "hippie",
+    "hisser", "hocher", "hockey", "hollande", "homard", "honte", "hoquet", "horde", "hors",
+    "hotte", "houblon", "houle", "housse", "huard", "hublot", "huche", "huer", "huit", "humer",
+    "hurler", "huron", "husky", "hutte", "hyène",'héros', 'haricot', 'honte', 'hache', 'haut', 'hors', 'huit', 'hurler'
+]
+
 
 # Função de Tradução
 def translate_to_portuguese(text):
@@ -172,61 +188,135 @@ def translate_to_portuguese(text):
 def get_french_phonetic(word):
     return epi.transliterate(word)
 
+
+
 def get_pronunciation(word):
-    # Remover o apóstrofo para o Epitran
-    word_clean = word.replace("'", '')
-    pronunciation = epi.transliterate(word_clean)
+    pronunciation = epi.transliterate(word)
     return pronunciation
 
-# Atualização da função omit_schwa
-def omit_schwa(pronunciation):
-    # Remove o schwa ('ə') em finais de palavra ou onde for apropriado
-    # Exemplo: 'pə' -> 'p' se for final de palavra
-    pronunciation = re.sub(r'ə\b', '', pronunciation)
-    # Remover schwa entre consoantes
-    pronunciation = re.sub(r'ə(?=[bcdfghjklmnpqrstvwxyz])', '', pronunciation)
+
+
+def omit_schwa(pronunciation, word):
+    # Não remover schwa em palavras monossilábicas
+    if len(word) <= 3:  # Considerar palavras curtas como monossilábicas
+        return pronunciation
+    # Remover schwa apenas em finais de palavra
+    pronunciation = re.sub(r'ə$', '', pronunciation)
     return pronunciation
 
-# Melhorar a função normalize_vowels
+
+
 def normalize_vowels(pronunciation):
     # Normaliza vogais para consistência
+    pronunciation = pronunciation.replace('ɛ', 'ɛ')
+    pronunciation = pronunciation.replace('ə', 'ə')
+    pronunciation = pronunciation.replace('ø', 'ø')
     pronunciation = pronunciation.replace('œ', 'ø')
     pronunciation = pronunciation.replace('ɑ', 'a')
     pronunciation = pronunciation.replace('ɥ', 'ɥ')
     # Adicionar mais normalizações conforme necessário
     return pronunciation
 
-# Implementação da função handle_special_cases
 def handle_special_cases(pronunciation):
-    # Exemplo de casos especiais
-    # Substituir 'wa' por 'ua'
+    # Tratar casos especiais
     pronunciation = pronunciation.replace('wa', 'ua')
-    # Substituir 'ɥi' por 'ui'
     pronunciation = pronunciation.replace('ɥi', 'ui')
-    # Tratar casos de 'liquid consonants' seguidas de semivogais
-    # Adicionar mais regras conforme necessário
+    # Ajustar 'j' seguido de vogal para 'i' + vogal
+    pronunciation = re.sub(r'j([aeiou])', r'i\1', pronunciation)
+    # Outros ajustes conforme necessário
     return pronunciation
 
-def convert_pronunciation_to_portuguese(pronunciation):
-    pronunciation = omit_schwa(pronunciation)
+
+
+def convert_pronunciation_to_portuguese(pronunciation, word):
+    pronunciation = omit_schwa(pronunciation, word)
     pronunciation = normalize_vowels(pronunciation)
     pronunciation = handle_special_cases(pronunciation)
-
     # Substituir símbolos fonéticos usando o mapeamento
     # Ordenar os fonemas por tamanho decrescente para evitar conflitos
     sorted_phonemes = sorted(french_to_portuguese_phonemes.keys(), key=len, reverse=True)
     for phoneme in sorted_phonemes:
         pronunciation = pronunciation.replace(phoneme, french_to_portuguese_phonemes[phoneme])
-
     return pronunciation
 
-def transliterate_and_convert(word):
-    pronunciation = get_pronunciation(word)
-    pronunciation = omit_schwa(pronunciation)
-    pronunciation = normalize_vowels(pronunciation)
-    pronunciation = handle_special_cases(pronunciation)
-    pronunciation_pt = convert_pronunciation_to_portuguese(pronunciation)
-    return pronunciation_pt
+def handle_apostrophes(words_list):
+    new_words = []
+    skip_next = False
+    for i, word in enumerate(words_list):
+        if skip_next:
+            skip_next = False
+            continue
+        if "'" in word:
+            # Manter a palavra inteira se for uma contração comum
+            if word.lower() in ["l'", "d'", "j'", "qu'", "n'", "m'"]:
+                if i + 1 < len(words_list):
+                    combined_word = word + words_list[i + 1]
+                    new_words.append(combined_word)
+                    skip_next = True
+                else:
+                    new_words.append(word)
+            else:
+                new_words.append(word)
+        else:
+            new_words.append(word)
+    return new_words
+
+
+def apply_liaisons(words_list, pronunciations):
+    new_pronunciations = []
+    for i in range(len(words_list) - 1):
+        current_word = words_list[i]
+        next_word = words_list[i + 1]
+        current_pron = pronunciations[i]
+
+        # Verificar se a próxima palavra começa com "h" aspirado
+        next_word_clean = re.sub(r"[^a-zA-Z']", '', next_word).lower()
+        h_aspirate = next_word_clean in h_aspirate_words
+
+
+        # Verificar se a última letra da palavra atual é uma consoante normalmente muda
+        if current_word[-1] in ['s', 'x', 'z', 't', 'n', 'r', 'p', 'd', 'g']:
+            if re.match(r"^[aeiouyâêîôûéèëïüÿæœh]", next_word, re.IGNORECASE):
+                if current_word[-1] in ['s', 'x', 'z']:
+                    liaison_sound = 'z'
+                elif current_word[-1] == 'd':
+                    liaison_sound = 't'
+                elif current_word[-1] == 'g':
+                    liaison_sound = 'k'
+                elif current_word[-1] == 't':
+                    liaison_sound = 't'
+                elif current_word[-1] == 'n':
+                    liaison_sound = 'n'
+                elif current_word[-1] == 'p':
+                    liaison_sound = 'p'
+                elif current_word[-1] == 'r':
+                    liaison_sound = 'ʁ'
+                else:
+                    liaison_sound = ''
+                current_pron += liaison_sound
+        new_pronunciations.append(current_pron)
+    # Adicionar a última pronúncia
+    new_pronunciations.append(pronunciations[-1])
+    return new_pronunciations
+
+
+
+def transliterate_and_convert_sentence(sentence):
+    words = sentence.split()
+    # Tratar apóstrofos
+    words = handle_apostrophes(words)
+    pronunciations = [get_pronunciation(word) for word in words]
+    # Aplicar liaisons
+    pronunciations = apply_liaisons(words, pronunciations)
+    # Converter cada pronúncia para português, passando a palavra original para omit_schwa
+    pronunciations_pt = [
+        convert_pronunciation_to_portuguese(pron, word)
+        for pron, word in zip(pronunciations, words)
+    ]
+    return ' '.join(pronunciations_pt)
+
+
+
 
 def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Calcular distância Damerau-Levenshtein normalizada
@@ -295,9 +385,9 @@ def pronounce():
     text = request.form['text']
     # Certifique-se de que os apóstrofos estão corretos
     text = text.replace("’", "'")
-    words = text.split()
-    pronunciations = [transliterate_and_convert(word) for word in words]
-    return jsonify({'pronunciations': ' '.join(pronunciations)})
+    # Transliterar e converter a frase inteira
+    pronunciation = transliterate_and_convert_sentence(text)
+    return jsonify({'pronunciations': pronunciation})
 
 @app.route('/translate', methods=['POST'])
 def translate():
@@ -377,8 +467,8 @@ def upload():
     for idx, real_word in enumerate(words_real):
         if idx < len(mapped_words):
             mapped_word = mapped_words[idx]
-            correct_pronunciation = transliterate_and_convert(real_word)
-            user_pronunciation = transliterate_and_convert(mapped_word)
+            correct_pronunciation = transliterate_and_convert_sentence(real_word)
+            user_pronunciation = transliterate_and_convert_sentence(mapped_word)
             if compare_phonetics(correct_pronunciation, user_pronunciation):
                 diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
                 correct_count += 1
@@ -398,12 +488,12 @@ def upload():
             diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
             incorrect_count += 1
             feedback[real_word] = {
-                'correct': transliterate_and_convert(real_word),
+                'correct': transliterate_and_convert_sentence(real_word),
                 'user': '',
-                'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert(real_word)}'"
+                'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert_sentence(real_word)}'"
             }
             pronunciations[real_word] = {
-                'correct': transliterate_and_convert(real_word),
+                'correct': transliterate_and_convert_sentence(real_word),
                 'user': ''
             }
 
@@ -499,6 +589,7 @@ def get_progress():
             'sentences_done': sentences_done
         }
     return jsonify(progress_data)
+
 
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
