@@ -155,7 +155,10 @@ french_to_portuguese_phonemes = {
     'z': 'z',
     'ʃ': 'ch',
     'ɲ': 'nh',
-    'ŋ': 'ng'
+    'ŋ': 'ng',
+    "a": "a",
+    "vɛ": "vé",
+    "j'": "j'",
 }
 
 # Lista de palavras com 'h' aspirado
@@ -184,7 +187,7 @@ def get_pronunciation(word):
 
 def remove_silent_endings(pronunciation, word):
     # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
-    if word.endswith('ent') and pronunciation.endswith('t'):
+    if word.endswith('ent') or pronunciation.endswith('t'):
         pronunciation = pronunciation[:-1]
     # Adicionar outras regras conforme necessário
     return pronunciation
@@ -219,7 +222,7 @@ def handle_apostrophes(words_list):
         if skip_next:
             skip_next = False
             continue
-        if "'" in word:
+        if "" in word:
             # Manter a palavra inteira se for uma contração comum
             if word.lower() in ["l'", "d'", "j'", "qu'", "n'", "m'"]:
                 if i + 1 < len(words_list):
@@ -233,6 +236,7 @@ def handle_apostrophes(words_list):
         else:
             new_words.append(word)
     return new_words
+
 
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
