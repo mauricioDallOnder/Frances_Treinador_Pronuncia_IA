@@ -60,8 +60,8 @@ except Exception as e:
     categorized_sentences = {}
 
 # Carregar o Modelo ASR Wav2Vec2 para Francês
-processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
+processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
+model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
 
 '''
 # Exemplo com um modelo alternativo
