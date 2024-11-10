@@ -17,16 +17,8 @@
         <div class="flex-md-row">
             <div class="main-content">
                 <h1 class="mb-4">Entraîneur de prononciation IA</h1>
-                <p id="categoryProgress" class="mt-3"></p>
-                <div class="mb-3">
-                    <label for="text" class="form-label">Écrivez ou générez un texte ci-dessous :</label>
-                    <textarea class="form-control" id="text" name="text"></textarea>
-
-                    <div class="pronunciation-feedback mt-4">
-                        <label for="translation" class="form-label">Pronuncia:</label>
-                        <h3 id="pronunciation"></h3>
-                    </div>
-                </div>
+               
+               
                 <div class="mb-3">
                     <label for="category" class="form-label">Sélectionnez la catégorie :</label>
                     <select class="form-select" id="category" name="category">
@@ -296,7 +288,14 @@
 
                     </select>
                 </div>
-                <div class="d-grid gap-2">
+
+                <div class="mb-3">
+                    <label for="text" class="form-label">Écrivez ou générez un texte ci-dessous :</label>
+                    <textarea class="form-control" id="text" name="text"></textarea>
+
+                    
+                </div>
+                <div class="classButton">
                     <p id="statusMessage"
                         style="display: none; font-weight: bold; color: red;text-align: center; font-weight: 12px;"></p>
                     <button class="btn btn-success" id="generateButton" onclick="generateSentence()">Générer une
@@ -308,10 +307,15 @@
                         </span>
 
                     </button>
-                    <button class="btn btn-secondary" id="speakButton" onclick="speakText()">Écouter le texte</button>
+                    <button class="btn btn-primary" id="speakButton" onclick="speakText()">Écouter le texte</button>
 
 
                 </div>
+                <div class="pronunciation-feedback mt-4">
+                    <h3 for="translation" class="form-label">Prononciation:</h3>
+                    <h3 id="pronunciation"></h3>
+                </div>
+               
                 <!-- Elemento para exibir as mensagens de status -->
 
                 <div class="uploading-message mt-3" id="uploadingMessage">
@@ -333,6 +337,7 @@
                 <p id="feedbackContent">Cliquez sur un mot pour voir sa prononciation.</p>
             </div>
         </div>
+        <p id="categoryProgress" class="mt-3"></p>
     </div>
 
     <script>
@@ -419,7 +424,7 @@
             let pronunciation = window.pronunciations[word];
             if (pronunciation) {
                 document.getElementById('feedbackContent').innerHTML = `
-                    <strong>Mot::</strong> ${word}<br>
+                    <strong>Mot:</strong> ${word}<br>
                     <strong>Prononciation correct:</strong> ${pronunciation.correct}<br>
                     <strong>Votre Prononciation:</strong> ${pronunciation.user || 'N/A'}
                     <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${word}')">Écuter la prononciation</button>
@@ -698,9 +703,7 @@
                     } else {
                         let progress = progressData[category];
                         if (progress) {
-                            document.getElementById('categoryProgress').innerText = `vous avez complété ${progress.sentences_done} de ${progress.total_sentences} phrases dans cette catégorie.`;
-                        } else {
-                            document.getElementById('categoryProgress').innerText = `vous avez complété 0 de ${progressData[category].total_sentences} phrases dans cette catégorie.`;
+                            document.getElementById('categoryProgress').innerText = `Il y a ${progress.total_sentences} phrases dans cette catégorie.`;
                         }
                     }
                 });
