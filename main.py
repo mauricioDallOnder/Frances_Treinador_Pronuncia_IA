@@ -24,7 +24,6 @@ import jellyfish
 from concurrent.futures import ThreadPoolExecutor
 from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 
-
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Variáveis globais para modelos
@@ -73,7 +72,6 @@ processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-
 model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 '''
 
-
 # Carregar progresso do usuário
 def load_performance_data():
     if os.path.exists(performance_file):
@@ -113,53 +111,65 @@ target_language = 'pt'  # Português
 # Mapeamento atualizado de fonemas franceses para português
 french_to_portuguese_phonemes = {
     # Vogais orais
-    'i': 'i',
-    'e': 'e',
-    'ɛ': 'é',  # Considerar 'ê' em alguns contextos
-    'a': 'a',
-    'ɑ': 'a',
-    'ɔ': 'ó',
-    'o': 'ô',
-    'u': 'u',
-    'y': 'u',
-    'ø': 'eu',  # Alternativamente 'êu'
-    'œ': 'é',
-    'ə': 'e',
+    'i': 'i',          # [i] em "ici" [isi]
+    'e': 'e',          # [e] em "été" [ete]
+    'ɛ': 'é',          # [ɛ] em "si" [si], considerar 'ê' em alguns contextos
+    'a': 'a',          # [a] em "année" [ane]
+    'ɑ': 'a',          # [ɑ] em "pâte" [pat]
+    'ɔ': 'ó',          # [ɔ] em "peu" [pø]
+    'o': 'ô',          # [o] em "aucune" [okyn]
+    'u': 'u',          # [u] em "ouverte" [uvɛʁt]
+    'y': 'u',          # [y] em "unique" [ynik]
+    'ø': 'eu',         # [ø] em "Europe" [øʁɔp], alternativamente 'êu'
+    'œ': 'é',          # [œ] em "œil" [œːj]
+    'ə': 'e',          # [ə] em "besoin" [bəzwɛ̃]
 
     # Vogais nasais
-    'ɛ̃': 'ẽ',
-    'ɑ̃': 'ã',
-    'ɔ̃': 'õ',
-    'œ̃': 'ũ',
+    'ɛ̃': 'ẽ',         # [ɛ̃] em "ensuite" [ɑ̃sɥit]
+    'ɑ̃': 'ã',         # [ɑ̃] em "oncle" [ɔ̃kl], "grande" [ɡʁɑ̃ːd]
+    'ɔ̃': 'õ',         # [ɔ̃] em "nous" [nu], "homme" [ɔm], "oncle" [ɔ̃kl]
+    'œ̃': 'ũ',         # [œ̃] em "œuf" [œf]
 
     # Semivogais
-    'j': 'i',  # Considerar contexto de semivogal
-    'w': 'u',
-    'ɥ': 'u',  # Em vez de 'ü'
+    'j': 'i',          # [j] em "hiérarchie" [jeʁaʁʃi]
+    'w': 'u',          # [w] em "oui" [wi]
+    'ɥ': 'u',          # [ɥ] em "huitième" [ɥitjɛm]
 
     # Consoantes
-    'b': 'b',
-    'd': 'd',
-    'f': 'f',
-    'g': 'g',
-    'ʒ': 'j',
-    'k': 'k',
-    'l': 'l',
-    'm': 'm',
-    'n': 'n',
-    'p': 'p',
-    'ʁ': 'r',
-    's': 's',
-    't': 't',
-    'v': 'v',
-    'z': 'z',
-    'ʃ': 'ch',
-    'ɲ': 'nh',
-    'ŋ': 'ng',
-    "a": "a",
-    "vɛ": "vé",
-    "j'": "j'",
+    'b': 'b',          # [b] em "beaucoup" [boku]
+    'd': 'd',          # [d] em "de" [də]
+    'f': 'f',          # [f] em "femme" [fam]
+    'g': 'g',          # [g] em "gauche" [ɡoːʃ]
+    'ʒ': 'j',          # [ʒ] em "jamais" [ʒamɛ], "zone" [zoːn], "jamais" [ʒamɛ]
+    'k': 'k',          # [k] em "que" [kə]
+    'l': 'l',          # [l] em "le" [lə]
+    'm': 'm',          # [m] em "même" [mɛm]
+    'n': 'n',          # [n] em "nous" [nu]
+    'p': 'p',          # [p] em "peu" [pø]
+    'ʁ': 'r',          # [ʁ] em "raison" [ʁɛzɔ̃], "raison" [ʁɛzɔ̃]
+    's': 's',          # [s] em "si" [si]
+    't': 't',          # [t] em "temps" [tɑ̃]
+    'v': 'v',          # [v] em "vous" [vu]
+    'z': 'z',          # [z] em "zone" [zoːn]
+    'ʃ': 'ch',         # [ʃ] em "chef" [ʃɛf], "tchèque" [tʃɛk]
+    'dʒ': 'dj',        # [dʒ] em "Djibouti" [dʒibuti]
+    'tʃ': 'tch',       # [tʃ] em "tchèque" [tʃɛk]
+    'ɲ': 'nh',         # [ɲ] em "gagner" [ɡaɲe], "ligne" [liɲ]
+    'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
+    'ç': 's',          # [ç] em "ça" [sa]
+
+    # Adicionando mapeamentos específicos conforme a tabela
+    'ʒ': 'j',          # [ʒ] em "jamais" [ʒamɛ]
+    'dʒ': 'dj',        # [dʒ] em "Djibouti" [dʒibuti]
+    'tʃ': 'tch',       # [tʃ] em "tchèque" [tʃɛk]
+    'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
+    'ɲ': 'nh',         # [ɲ] em "gagner" [ɡaɲe]
+    'ʁ': 'r',          # [ʁ] em "raison" [ʁɛzɔ̃]
+    'ç': 's',          # [ç] em "ça" [sa]
+    
+    # Outros fonemas podem ser adicionados conforme necessário
 }
+
 
 # Lista de palavras com 'h' aspirado
 h_aspirate_words = [
@@ -173,8 +183,6 @@ h_aspirate_words = [
     "hurler", "huron", "husky", "hutte", "hyène"
 ]
 
-
-
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
     try:
@@ -184,10 +192,9 @@ def get_pronunciation(word):
         print(f"Erro ao transliterar '{word}': {e}")
         return word  # Retorna a palavra original como fallback
 
-
 def remove_silent_endings(pronunciation, word):
     # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
-    if word.endswith('ent') or pronunciation.endswith('t'):
+    if word.endswith('ent') and pronunciation.endswith('t'):
         pronunciation = pronunciation[:-1]
     # Adicionar outras regras conforme necessário
     return pronunciation
@@ -222,11 +229,12 @@ def handle_apostrophes(words_list):
         if skip_next:
             skip_next = False
             continue
-        if "" in word:
+        if "'" in word:
             # Manter a palavra inteira se for uma contração comum
-            if word.lower() in ["l'", "d'", "j'", "qu'", "n'", "m'"]:
+            prefix, sep, suffix = word.partition("'")
+            if prefix.lower() in ["l", "d", "j", "qu", "n", "m"]:
                 if i + 1 < len(words_list):
-                    combined_word = word + words_list[i + 1]
+                    combined_word = prefix + suffix + words_list[i + 1]
                     new_words.append(combined_word)
                     skip_next = True
                 else:
@@ -236,7 +244,6 @@ def handle_apostrophes(words_list):
         else:
             new_words.append(word)
     return new_words
-
 
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
@@ -303,7 +310,6 @@ def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Verificar se a pontuação combinada atinge o limite ajustado
     return combined_score >= smooth_threshold
 
-
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Processamento de áudio:
 def reduce_noise(waveform, sample_rate):
@@ -360,7 +366,6 @@ def pronounce():
     # Transliterar e converter a frase inteira
     pronunciation = transliterate_and_convert_sentence(text)
     return jsonify({'pronunciations': pronunciation})
-
 
 @app.route('/get_sentence', methods=['POST'])
 def get_sentence():
@@ -517,7 +522,6 @@ def upload():
         'completeness_score': f"{completeness_score:.2f}"
     })
 
-
 @app.route('/speak', methods=['POST'])
 def speak():
     text = request.form['text']
@@ -525,8 +529,6 @@ def speak():
     file_path = tempfile.mktemp(suffix=".mp3")
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
-
-
 
 @app.route('/get_progress', methods=['GET'])
 def get_progress():
