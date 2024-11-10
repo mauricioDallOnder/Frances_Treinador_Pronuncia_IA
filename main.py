@@ -63,6 +63,15 @@ except Exception as e:
 processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
 
+'''
+# Exemplo com um modelo alternativo
+processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
+model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
+
+# Carregar o Modelo ASR Wav2Vec2 para Francês
+processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
+model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
+'''
 
 
 # Carregar progresso do usuário
@@ -106,14 +115,14 @@ french_to_portuguese_phonemes = {
     # Vogais orais
     'i': 'i',
     'e': 'e',
-    'ɛ': 'é',
+    'ɛ': 'é',  # Considerar 'ê' em alguns contextos
     'a': 'a',
     'ɑ': 'a',
     'ɔ': 'ó',
     'o': 'ô',
     'u': 'u',
     'y': 'u',
-    'ø': 'eu',
+    'ø': 'eu',  # Alternativamente 'êu'
     'œ': 'é',
     'ə': 'e',
 
@@ -124,9 +133,9 @@ french_to_portuguese_phonemes = {
     'œ̃': 'ũ',
 
     # Semivogais
-    'j': 'i',
+    'j': 'i',  # Considerar contexto de semivogal
     'w': 'u',
-    'ɥ': 'ü',
+    'ɥ': 'u',  # Em vez de 'ü'
 
     # Consoantes
     'b': 'b',
@@ -146,8 +155,7 @@ french_to_portuguese_phonemes = {
     'z': 'z',
     'ʃ': 'ch',
     'ɲ': 'nh',
-    'ŋ': 'ng',
-    'lɛ̃': 'ã'
+    'ŋ': 'ng'
 }
 
 # Lista de palavras com 'h' aspirado
@@ -166,8 +174,13 @@ h_aspirate_words = [
 
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
-    pronunciation = epi.transliterate(word)
-    return pronunciation
+    try:
+        pronunciation = epi.transliterate(word)
+        return pronunciation
+    except Exception as e:
+        print(f"Erro ao transliterar '{word}': {e}")
+        return word  # Retorna a palavra original como fallback
+
 
 def remove_silent_endings(pronunciation, word):
     # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
@@ -272,13 +285,13 @@ def remove_punctuation_end(sentence):
 
 def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Calcular distância Damerau-Levenshtein normalizada
-    damerau_score = 1 - jellyfish.damerau_levenshtein_distance(phonetic1, phonetic2) / max(len(phonetic1), len(phonetic2))
+    damerau_score = 1 - jellyfish.damerau_levenshtein_distance(phonetic1, phonetic2) / max(len(phonetic1), len(phonetic2), 1)
 
     # Calcular similaridade Jaro-Winkler
     jaro_winkler_score = jellyfish.jaro_winkler_similarity(phonetic1, phonetic2)
 
-    # Combinar ambos os resultados com uma ponderação
-    combined_score = 0.7 * damerau_score + 0.3 * jaro_winkler_score
+    # Combinar ambos os resultados com uma ponderação ajustada
+    combined_score = 0.6 * damerau_score + 0.4 * jaro_winkler_score
 
     # Suavização para pontuações próximas ao limite
     smooth_threshold = threshold - 0.05 if combined_score >= threshold - 0.05 else threshold
@@ -286,29 +299,49 @@ def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
     # Verificar se a pontuação combinada atinge o limite ajustado
     return combined_score >= smooth_threshold
 
+
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Processamento de áudio:
-# Função para melhorar a qualidade do áudio com redução de ruído
 def reduce_noise(waveform, sample_rate):
-    return nr.reduce_noise(y=waveform, sr=sample_rate)
+    # Aplicar redução de ruído com parâmetros ajustados
+    reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=1.0, stationary=False)
+    return reduced_waveform
+
+def normalize_waveform(waveform):
+    # Normalizar para o intervalo [-1, 1]
+    max_val = np.max(np.abs(waveform))
+    if max_val > 0:
+        return waveform / max_val
+    return waveform
 
 def process_audio(file_path):
     try:
         with wave.open(file_path, 'rb') as wav_file:
             sample_rate = wav_file.getframerate()
             num_frames = wav_file.getnframes()
-            waveform = np.frombuffer(wav_file.readframes(num_frames), dtype=np.int16) / 32768.0
+            waveform = np.frombuffer(wav_file.readframes(num_frames), dtype=np.int16).astype(np.float32)
+        
+        # Redução de ruído e normalização
         waveform = reduce_noise(waveform, sample_rate)
+        waveform = normalize_waveform(waveform)
+        
         waveform_tensor = torch.tensor(waveform, dtype=torch.float32).unsqueeze(0)
+        
+        # Resample se necessário
         if sample_rate != 16000:
-            waveform_tensor = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform_tensor)
+            resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
+            waveform_tensor = resampler(waveform_tensor)
+        
+        # Processamento pelo modelo ASR
         inputs = processor_asr(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
         with torch.no_grad():
             logits = model_asr(inputs.input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         return processor_asr.batch_decode(predicted_ids)[0]
     finally:
-        os.remove(file_path)  # O arquivo é removido aqui
+        if os.path.exists(file_path):
+            os.remove(file_path)  # O arquivo é removido aqui
+
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Rotas de API
 @app.route('/')
@@ -372,17 +405,35 @@ def get_sentence():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    file = request.files['audio']
-    text = request.form['text']
+    file = request.files.get('audio')
+    if not file:
+        return jsonify({"error": "Nenhum arquivo de áudio enviado."}), 400
+    
+    # Limitar tamanho do arquivo (por exemplo, 10 MB)
+    max_size = 10 * 1024 * 1024  # 10 MB
+    file.seek(0, os.SEEK_END)
+    file_length = file.tell()
+    if file_length > max_size:
+        return jsonify({"error": "Arquivo de áudio muito grande. O limite é de 10 MB."}), 400
+    file.seek(0)
+    
+    text = request.form.get('text')
+    if not text:
+        return jsonify({"error": "Texto de referência não fornecido."}), 400
+    
     category = request.form.get('category', 'random')
-
+    
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
         tmp_file.write(file.read())
         tmp_file_path = tmp_file.name
-
-    # Executar processamento de áudio usando o modelo ASR
-    transcription = process_audio(tmp_file_path)
-
+    
+    # Enviar para processamento assíncrono
+    future = executor.submit(process_audio, tmp_file_path)
+    try:
+        transcription = future.result(timeout=30)  # Timeout de 30 segundos
+    except Exception as e:
+        return jsonify({"error": "Erro ao processar o áudio."}), 500
+    
     normalized_transcription = normalize_text(transcription)
     normalized_text = normalize_text(text)
     words_estimated = normalized_transcription.split()
@@ -462,6 +513,7 @@ def upload():
         'completeness_score': f"{completeness_score:.2f}"
     })
 
+
 @app.route('/speak', methods=['POST'])
 def speak():
     text = request.form['text']
@@ -484,6 +536,7 @@ def get_progress():
             'sentences_done': sentences_done
         }
     return jsonify(progress_data)
+
 
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
