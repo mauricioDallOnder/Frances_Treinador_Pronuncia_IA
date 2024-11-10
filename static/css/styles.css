@@ -25,7 +25,7 @@ body {
   cursor: pointer;
   margin-right: 5px;
   padding: 5px;
-  background-color: #f0f0f0;
+  color:#4158D0;
   border-radius: 5px;
 }
 .separator {
@@ -89,6 +89,7 @@ body {
     font-size: 18px;
     line-height: 1.4;
     margin-top: 8px;
+    color:#4158D0
   }
 
   /* Ajuste do tamanho da fonte e do espaçamento */
@@ -100,6 +101,14 @@ body {
   #feedbackBox {
     padding: 10px;
     font-size: 16px;
+  }
+  .classButton{
+    display: flex;
+    flex-direction: column;
+  }
+  .word{
+    font-size:medium;
+    line-height: 1.6rem;
   }
  
 }
@@ -121,6 +130,14 @@ body {
     border: 2px solid #3b5998;
     border-radius: 10px;
     padding: 20px;
+   
   }
+  
+}
+
+.classButton{
+  display: flex;
+  justify-content: center;
+  gap:12px
   
 }
