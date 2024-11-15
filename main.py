@@ -5,15 +5,11 @@ import torch
 import torchaudio
 import editdistance
 from difflib import SequenceMatcher
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from flask import Flask, request, render_template, jsonify, send_file
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Configura o backend para não-GUI
 import re
 import os
 import tempfile
-import wave
 import pickle
 import random
 import pandas as pd
@@ -23,24 +19,17 @@ import epitran
 import noisereduce as nr
 from concurrent.futures import ThreadPoolExecutor
 import logging
-app = Flask(__name__, template_folder="templates", static_folder="static")
 
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Variáveis globais para modelos
-model_asr, processor_asr, translation_model, tokenizer = None, None, None, None
-
 # Executor para processamento assíncrono
-executor = ThreadPoolExecutor(max_workers=1)
+executor = ThreadPoolExecutor(max_workers=1)  # Ajuste conforme necessário
 
 # Carregar frases categorizadas e arquivos --------------------------------------------------------------------------------------------------
-
-# Caminhos dos arquivos de desempenho e progresso do usuário
-performance_file = 'performance_data.pkl'
-user_progress_file = 'user_progress.pkl'
 
 # Carregar frases aleatórias
 try:
@@ -52,59 +41,16 @@ try:
     else:
         random_sentences = random_sentences_df
 except Exception as e:
-    print(f"Erro ao carregar data_de_en_fr.pickle: {e}")
+    logger.error(f"Erro ao carregar data_de_en_fr.pickle: {e}")
     random_sentences = []
 
+# Carregar frases categorizadas
 try:
     with open('frases_categorias.pickle', 'rb') as f:
         categorized_sentences = pickle.load(f)
 except Exception as e:
-    print(f"Erro ao carregar frases_categorias.pickle: {e}")
+    logger.error(f"Erro ao carregar frases_categorias.pickle: {e}")
     categorized_sentences = {}
-
-# Carregar o Modelo ASR Wav2Vec2 para Francês
-processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-
-'''
-# Exemplo com um modelo alternativo
-processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-
-# Carregar o Modelo ASR Wav2Vec2 para Francês
-processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
-'''
-
-# Carregar progresso do usuário
-def load_performance_data():
-    if os.path.exists(performance_file):
-        with open(performance_file, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return []
-
-def save_performance_data(data):
-    with open(performance_file, 'wb') as f:
-        pickle.dump(data, f)
-
-performance_data = load_performance_data()
-
-def load_user_progress():
-    if os.path.exists(user_progress_file):
-        with open(user_progress_file, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return {}
-
-def save_user_progress(progress):
-    with open(user_progress_file, 'wb') as f:
-        pickle.dump(progress, f)
-
-user_progress = load_user_progress()
-
-##-----------------------------------------------------------------------------------------------------------
-# Iniciar o Epitran e funções de tradução
 
 # Inicializar Epitran para Francês
 epi = epitran.Epitran('fra-Latn')
@@ -162,18 +108,8 @@ french_to_portuguese_phonemes = {
     'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
     'ç': 's',          # [ç] em "ça" [sa]
 
-    # Adicionando mapeamentos específicos conforme a tabela
-    'ʒ': 'j',          # [ʒ] em "jamais" [ʒamɛ]
-    'dʒ': 'dj',        # [dʒ] em "Djibouti" [dʒibuti]
-    'tʃ': 'tch',       # [tʃ] em "tchèque" [tʃɛk]
-    'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
-    'ɲ': 'nh',         # [ɲ] em "gagner" [ɡaɲe]
-    'ʁ': 'r',          # [ʁ] em "raison" [ʁɛzɔ̃]
-    'ç': 's',          # [ç] em "ça" [sa]
-    
     # Outros fonemas podem ser adicionados conforme necessário
 }
-
 
 # Lista de palavras com 'h' aspirado
 h_aspirate_words = [
@@ -193,7 +129,7 @@ def get_pronunciation(word):
         pronunciation = epi.transliterate(word)
         return pronunciation
     except Exception as e:
-        print(f"Erro ao transliterar '{word}': {e}")
+        logger.error(f"Erro ao transliterar '{word}': {e}")
         return word  # Retorna a palavra original como fallback
 
 def remove_silent_endings(pronunciation, word):
@@ -248,7 +184,6 @@ def handle_apostrophes(words_list):
         else:
             new_words.append(word)
     return new_words
-
 
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
@@ -332,7 +267,6 @@ def reduce_noise(waveform, sample_rate):
         logger.error(f"Erro na redução de ruído: {e}")
         return waveform  # Retorna o waveform original em caso de erro
 
-
 def normalize_waveform(waveform):
     # Normalizar para o intervalo [-1, 1]
     max_val = np.max(np.abs(waveform))
@@ -342,41 +276,75 @@ def normalize_waveform(waveform):
 
 def process_audio(file_path):
     try:
-        with wave.open(file_path, 'rb') as wav_file:
-            sample_rate = wav_file.getframerate()
-            num_frames = wav_file.getnframes()
-            waveform = np.frombuffer(wav_file.readframes(num_frames), dtype=np.int16).astype(np.float32)
+        # Carregar e processar o áudio usando torchaudio
+        audio_input, sample_rate = torchaudio.load(file_path)
         
         # Redução de ruído e normalização
-        waveform = reduce_noise(waveform, sample_rate)
+        waveform = reduce_noise(audio_input.numpy()[0], sample_rate)
         waveform = normalize_waveform(waveform)
         
-        waveform_tensor = torch.tensor(waveform, dtype=torch.float32).unsqueeze(0)
-        
-        # Resample se necessário
-        if sample_rate != 16000:
-            resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
-            waveform_tensor = resampler(waveform_tensor)
-        
-        # Garantir que o tensor tenha apenas um canal (mono)
-        if waveform_tensor.shape[0] > 1:
-            waveform_tensor = torch.mean(waveform_tensor, dim=0, keepdim=True)
-        
-        # Processamento pelo modelo ASR com log detalhado
-        logger.info("Iniciando processamento de áudio pelo modelo ASR")
-        inputs = processor_asr(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
-        with torch.no_grad():
-            logits = model_asr(inputs.input_values).logits
-        predicted_ids = torch.argmax(logits, dim=-1)
-        transcription = processor_asr.batch_decode(predicted_ids)[0]
+        # Preparar a entrada para o pipeline sem salvar em disco
+        logger.info("Iniciando processamento de áudio pelo pipeline Whisper ASR")
+        transcription = pipe(
+            {"array": waveform, "sampling_rate": 16000},
+            generate_kwargs={"language": "french", "task": "transcribe"}
+        )["text"]
         logger.info(f"Transcrição obtida: {transcription}")
         return transcription
     except Exception as e:
         logger.error(f"Erro ao processar áudio: {e}")
         raise e  # Levanta a exceção para ser tratada na chamada da função
     finally:
+        # Remover arquivo de áudio original
         if os.path.exists(file_path):
-            os.remove(file_path)  # O arquivo é removido aqui
+            os.remove(file_path)
+
+##--------------------------------------------------------------------------------------------------------------------------------
+# Inicialização do Modelo e Pipeline antes de iniciar o servidor Flask
+def initialize_model():
+    global pipe
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    model_id = "openai/whisper-large-v3"
+    
+    # Carregar o modelo com otimizações
+    model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        model_id,
+        torch_dtype=torch_dtype,
+        low_cpu_mem_usage=True,
+        use_safetensors=True,
+        attn_implementation="flash_attention_2" if torch.cuda.is_available() else "sdpa"
+    ).to(device)
+    
+    # Compilar o modelo se possível e se Flash Attention 2 não estiver sendo usado
+    if torch.cuda.is_available() and torch.__version__ >= "2.0" and model.config.attn_implementation != "flash_attention_2":
+        try:
+            model = torch.compile(model, mode="reduce-overhead")
+            logger.info("Modelo compilado com sucesso usando torch.compile.")
+        except Exception as e:
+            logger.warning(f"Falha ao compilar o modelo com torch.compile: {e}")
+    
+    # Carregar o processador
+    processor = AutoProcessor.from_pretrained(model_id)
+    
+    # Criar o pipeline com otimizações
+    pipe = pipeline(
+        "automatic-speech-recognition",
+        model=model,
+        tokenizer=processor.tokenizer,
+        feature_extractor=processor.feature_extractor,
+        chunk_length_s=30,
+        batch_size=16,  # Ajuste conforme a capacidade da sua GPU
+        torch_dtype=torch_dtype,
+        device=device,
+        # Utilize Flash Attention 2 se estiver instalado e disponível
+        # attn_implementation="flash_attention_2"  # Adicione se necessário
+    )
+    logger.info("Pipeline Whisper ASR inicializado com sucesso.")
+
+# Função de inicialização
+initialize_model()
+
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Rotas de API
 @app.route('/')
@@ -406,35 +374,15 @@ def get_sentence():
         else:
             if category in categorized_sentences:
                 sentences_in_category = categorized_sentences[category]
-                user_category_progress = user_progress.get(category, {'sentences_done': [], 'performance': []})
-                sentences_done = user_category_progress.get('sentences_done', [])
-                sentences_remaining = list(set(sentences_in_category) - set(sentences_done))
-
-                if not sentences_remaining:
-                    # Todas as frases foram praticadas
-                    performance_list = user_category_progress.get('performance', [])
-                    if performance_list:
-                        avg_ratio = sum(p['ratio'] for p in performance_list) / len(performance_list)
-                        avg_completeness = sum(p['completeness_score'] for p in performance_list) / len(performance_list)
-                    else:
-                        avg_ratio = 0
-                        avg_completeness = 0
-
-                    return jsonify({
-                        "message": "Você completou todas as frases desta categoria.",
-                        "average_ratio": f"{avg_ratio:.2f}",
-                        "average_completeness": f"{avg_completeness:.2f}"
-                    })
-                else:
-                    sentence_text = random.choice(sentences_remaining)
-                    sentence_text = remove_punctuation_end(sentence_text)
+                sentence_text = random.choice(sentences_in_category)
+                sentence_text = remove_punctuation_end(sentence_text)
             else:
                 return jsonify({"error": "Categoria não encontrada."}), 400
 
         return jsonify({'fr_sentence': sentence_text, 'category': category})
 
     except Exception as e:
-        print(f"Erro no endpoint /get_sentence: {e}")
+        logger.error(f"Erro no endpoint /get_sentence: {e}")
         return jsonify({"error": "Erro interno no servidor."}), 500
 
 @app.route('/upload', methods=['POST'])
@@ -464,23 +412,26 @@ def upload():
     # Enviar para processamento assíncrono
     future = executor.submit(process_audio, tmp_file_path)
     try:
-        transcription = future.result(timeout=60)  # Timeout de 30 segundos
+        transcription = future.result(timeout=60)  # Timeout de 60 segundos
     except Exception as e:
-        print(f"Erro ao processar áudio: {e}")  # Log do erro
+        logger.error(f"Erro ao processar áudio: {e}")  # Log do erro
         return jsonify({"error": "Erro ao processar o áudio."}), 500
     
+    # Normalização e comparação de transcrições
     normalized_transcription = normalize_text(transcription)
     normalized_text = normalize_text(text)
     words_estimated = normalized_transcription.split()
     words_real = normalized_text.split()
     mapped_words, mapped_words_indices = get_best_mapped_words(words_estimated, words_real)
 
+    # Inicialização de variáveis para feedback
     diff_html = []
     pronunciations = {}
     feedback = {}
     correct_count = 0
     incorrect_count = 0
 
+    # Comparação palavra a palavra
     for idx, real_word in enumerate(words_real):
         if idx < len(mapped_words):
             mapped_word = mapped_words[idx]
@@ -518,27 +469,6 @@ def upload():
     total_words = correct_count + incorrect_count
     ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
     completeness_score = (len(words_estimated) / len(words_real)) * 100
-    performance_data.append({
-        'date': pd.Timestamp.now().strftime('%Y-%m-%d'),
-        'correct': correct_count,
-        'incorrect': incorrect_count,
-        'ratio': ratio,
-        'completeness_score': completeness_score,
-        'sentence': text
-    })
-    save_performance_data(performance_data)
-
-    if category != 'random':
-        user_category_progress = user_progress.get(category, {'sentences_done': [], 'performance': []})
-        if text not in user_category_progress['sentences_done']:
-            user_category_progress['sentences_done'].append(text)
-        user_category_progress['performance'].append({
-            'sentence': text,
-            'ratio': ratio,
-            'completeness_score': completeness_score
-        })
-        user_progress[category] = user_category_progress
-        save_user_progress(user_progress)
 
     return jsonify({
         'ratio': f"{ratio:.2f}",
@@ -556,20 +486,50 @@ def speak():
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
 
-@app.route('/get_progress', methods=['GET'])
-def get_progress():
-    progress_data = {}
-    for category in categorized_sentences.keys():
-        total_sentences = len(categorized_sentences[category])
-        user_category_progress = user_progress.get(category, {'sentences_done': []})
-        sentences_done = len(user_category_progress.get('sentences_done', []))
-        progress_data[category] = {
-            'total_sentences': total_sentences,
-            'sentences_done': sentences_done
-        }
-    return jsonify(progress_data)
+# Inicialização do Modelo e Pipeline antes de iniciar o servidor Flask
+def initialize_model():
+    global pipe
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    model_id = "openai/whisper-large-v3"
+    
+# Carregar o modelo com otimizações
+    model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        model_id,
+        torch_dtype=torch_dtype,
+        low_cpu_mem_usage=True,
+        use_safetensors=True,
+        attn_implementation="flash_attention_2" if torch.cuda.is_available() else "sdpa"
+    ).to(device)
+    
+    # Compilar o modelo se possível e se Flash Attention 2 não estiver sendo usado
+    if torch.cuda.is_available() and torch.__version__ >= "2.0" and model.config.attn_implementation != "flash_attention_2":
+        try:
+            model = torch.compile(model, mode="reduce-overhead")
+            logger.info("Modelo compilado com sucesso usando torch.compile.")
+        except Exception as e:
+            logger.warning(f"Falha ao compilar o modelo com torch.compile: {e}")
+    
+    # Carregar o processador
+    processor = AutoProcessor.from_pretrained(model_id)
+    
+    # Criar o pipeline com otimizações
+    pipe = pipeline(
+        "automatic-speech-recognition",
+        model=model,
+        tokenizer=processor.tokenizer,
+        feature_extractor=processor.feature_extractor,
+        chunk_length_s=30,
+        batch_size=2,  # Reduzido para adequar ao hardware
+        torch_dtype=torch_dtype,
+        device=device,
+        # Utilize Flash Attention 2 se estiver instalado e disponível
+        # attn_implementation="flash_attention_2"  # Adicione se necessário
+    )
+    logger.info("Pipeline Whisper ASR inicializado com sucesso.")
 
-
+# Função de inicialização
+initialize_model()
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000))
