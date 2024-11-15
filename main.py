@@ -230,9 +230,9 @@ def handle_apostrophes(words_list):
             skip_next = False
             continue
         if "'" in word:
-            # Manter a palavra inteira se for uma contração comum
             prefix, sep, suffix = word.partition("'")
-            if prefix.lower() in ["l", "d", "j", "qu", "n", "m"]:
+            # Contrações comuns
+            if prefix.lower() in ["l", "d", "j", "qu", "n", "m", "c"]: 
                 if i + 1 < len(words_list):
                     combined_word = prefix + suffix + words_list[i + 1]
                     new_words.append(combined_word)
@@ -244,6 +244,7 @@ def handle_apostrophes(words_list):
         else:
             new_words.append(word)
     return new_words
+
 
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
@@ -275,6 +276,9 @@ def apply_liaisons(words_list, pronunciations):
                 current_pron = current_pron + 'p'
             elif current_word[-1] == 'r':
                 current_pron = current_pron + 'r'
+            # Liaison com 'd' (ex: d'une)
+            elif current_word.lower() == "d'" and re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE):
+                current_pron = current_pron.rstrip('e') + 'z'  # Adiciona /z/
         # Caso contrário, não aplica liaison
         new_pronunciations.append(current_pron)
     # Adicionar a última pronúncia
@@ -439,8 +443,9 @@ def upload():
     # Enviar para processamento assíncrono
     future = executor.submit(process_audio, tmp_file_path)
     try:
-        transcription = future.result(timeout=30)  # Timeout de 30 segundos
+        transcription = future.result(timeout=60)  # Timeout de 30 segundos
     except Exception as e:
+        print(f"Erro ao processar áudio: {e}")  # Log do erro
         return jsonify({"error": "Erro ao processar o áudio."}), 500
     
     normalized_transcription = normalize_text(transcription)
@@ -542,6 +547,7 @@ def get_progress():
             'sentences_done': sentences_done
         }
     return jsonify(progress_data)
+
 
 
 # Inicialização e execução do aplicativo
