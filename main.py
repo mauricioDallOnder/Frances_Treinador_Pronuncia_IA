@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Executor para processamento assíncrono
-executor = ThreadPoolExecutor(max_workers=1)  # Ajuste conforme necessário
+executor = ThreadPoolExecutor(max_workers=1)  # Limite a 1 worker
 
 # Carregar frases categorizadas e arquivos --------------------------------------------------------------------------------------------------
 
@@ -305,7 +305,7 @@ def initialize_model():
     global pipe
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-    model_id = "openai/whisper-large-v3"
+    model_id = "openai/whisper-small"  # Modelo menor
     
     # Carregar o modelo com otimizações
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
@@ -315,6 +315,13 @@ def initialize_model():
         use_safetensors=True,
         attn_implementation="flash_attention_2" if torch.cuda.is_available() else "sdpa"
     ).to(device)
+    
+    # Quantização dinâmica para CPU
+    if not torch.cuda.is_available():
+        model = torch.quantization.quantize_dynamic(
+            model, {torch.nn.Linear}, dtype=torch.qint8
+        )
+        logger.info("Modelo quantizado dinamicamente para int8.")
     
     # Compilar o modelo se possível e se Flash Attention 2 não estiver sendo usado
     if torch.cuda.is_available() and torch.__version__ >= "2.0" and model.config.attn_implementation != "flash_attention_2":
@@ -333,12 +340,10 @@ def initialize_model():
         model=model,
         tokenizer=processor.tokenizer,
         feature_extractor=processor.feature_extractor,
-        chunk_length_s=30,
-        batch_size=16,  # Ajuste conforme a capacidade da sua GPU
+        chunk_length_s=15,  # Reduzido de 30 para 15 segundos
+        batch_size=4,  # Reduzido para adequar ao hardware
         torch_dtype=torch_dtype,
         device=device,
-        # Utilize Flash Attention 2 se estiver instalado e disponível
-        # attn_implementation="flash_attention_2"  # Adicione se necessário
     )
     logger.info("Pipeline Whisper ASR inicializado com sucesso.")
 
@@ -491,9 +496,9 @@ def initialize_model():
     global pipe
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-    model_id = "openai/whisper-large-v3"
+    model_id = "openai/whisper-large"  # Modelo menor
     
-# Carregar o modelo com otimizações
+    # Carregar o modelo com otimizações
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
         model_id,
         torch_dtype=torch_dtype,
@@ -501,6 +506,13 @@ def initialize_model():
         use_safetensors=True,
         attn_implementation="flash_attention_2" if torch.cuda.is_available() else "sdpa"
     ).to(device)
+    
+    # Quantização dinâmica para CPU
+    if not torch.cuda.is_available():
+        model = torch.quantization.quantize_dynamic(
+            model, {torch.nn.Linear}, dtype=torch.qint8
+        )
+        logger.info("Modelo quantizado dinamicamente para int8.")
     
     # Compilar o modelo se possível e se Flash Attention 2 não estiver sendo usado
     if torch.cuda.is_available() and torch.__version__ >= "2.0" and model.config.attn_implementation != "flash_attention_2":
@@ -519,17 +531,16 @@ def initialize_model():
         model=model,
         tokenizer=processor.tokenizer,
         feature_extractor=processor.feature_extractor,
-        chunk_length_s=30,
+        chunk_length_s=15,  # Reduzido de 30 para 15 segundos
         batch_size=2,  # Reduzido para adequar ao hardware
         torch_dtype=torch_dtype,
         device=device,
-        # Utilize Flash Attention 2 se estiver instalado e disponível
-        # attn_implementation="flash_attention_2"  # Adicione se necessário
     )
     logger.info("Pipeline Whisper ASR inicializado com sucesso.")
 
 # Função de inicialização
 initialize_model()
+
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000))
