@@ -290,12 +290,11 @@
                 <div class="mb-3">
                     <label for="text" class="form-label">Écrivez ou générez un texte ci-dessous :</label>
                     <textarea class="form-control" id="text" name="text"></textarea>
-
-
                 </div>
+
                 <div class="classButton">
                     <p id="statusMessage"
-                        style="display: none; font-weight: bold; color: red;text-align: center; font-weight: 12px;"></p>
+                        style="display: none; font-weight: bold; color: red;text-align: center; font-size: 12px;"></p>
                     <button class="btn btn-success" id="generateButton" onclick="generateSentence()">Générer une
                         phrase</button>
                     <button class="btn btn-danger" id="recordButton" onclick="toggleRecording()">
@@ -303,20 +302,17 @@
                             Parler
                             <i class="material-icons" id="recordIcon">mic</i>
                         </span>
-
                     </button>
                     <button class="btn btn-primary" id="speakButton" onclick="speakText()">Écouter le texte</button>
-
-
                 </div>
+
                 <div class="pronunciation-feedback mt-4">
-                    <h3 for="translation" class="form-label">Prononciation:</h3>
+                    <h3 class="form-label">Prononciation:</h3>
                     <h3 id="pronunciation"></h3>
                 </div>
 
                 <!-- Elemento para exibir as mensagens de status -->
-
-                <div class="uploading-message mt-3" id="uploadingMessage">
+                <div class="uploading-message mt-3" id="uploadingMessage" style="display: none;">
                     <span id="uploadingText">Envoi audio... Attendre.</span>
                     <progress id="uploadProgress" value="0" max="100" style="width: 100%;"></progress>
                 </div>
@@ -329,17 +325,15 @@
                     <p>Taux d’achèvement: <span id="completeness"></span>%</p>
                 </div>
                 <div id="audioContainer" class="mt-4"></div>
-
             </div>
             <div class="feedback-box" id="feedbackBox">
                 <p id="feedbackContent">Cliquez sur un mot pour voir sa prononciation.</p>
             </div>
         </div>
-        <p id="categoryProgress" class="mt-3"></p>
     </div>
 
     <script>
-
+        // Função para escapar caracteres HTML
         function escapeHtml(unsafe) {
             return unsafe
                 .replace(/&/g, "&amp;")
@@ -347,9 +341,7 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
-
         }
-
 
         document.addEventListener('DOMContentLoaded', function () {
             const categorySelect = document.getElementById('category');
@@ -358,25 +350,18 @@
 
             // Define uma opção aleatória
             categorySelect.selectedIndex = randomIndex;
-
-            // Atualiza o progresso da categoria com a seleção aleatória
-            updateCategoryProgress();
         });
-
-        document.getElementById('category').addEventListener('change', updateCategoryProgress);
 
         // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
         function disableButtons() {
             document.getElementById('speakButton').disabled = true;
             document.getElementById('generateButton').disabled = true;
-
             document.getElementById('recordButton').disabled = true;
         }
 
         function enableButtons() {
             document.getElementById('speakButton').disabled = false;
             document.getElementById('generateButton').disabled = false;
-
             document.getElementById('recordButton').disabled = false;
         }
 
@@ -390,6 +375,7 @@
             let statusMessage = document.getElementById('statusMessage');
             statusMessage.style.display = 'none';
         }
+
         document.getElementById('text').addEventListener('input', function () {
             fetchPronunciation(this.value);
         });
@@ -404,7 +390,8 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    const pronunciationHtml = data.pronunciations.split(' || ').map(word => `<span class="word">${word}</span>`).join('<span class="separator">||</span>');
+                    // Ajuste: Dividir por espaço em vez de ' || '
+                    const pronunciationHtml = data.pronunciations.split(' ').map(word => `<span class="word">${word}</span>`).join(' ');
                     document.getElementById('pronunciation').innerHTML = pronunciationHtml;
                 });
         }
@@ -433,45 +420,13 @@
             let pronunciation = window.pronunciations[word];
             if (pronunciation) {
                 document.getElementById('feedbackContent').innerHTML = `
-            <strong>Mot:</strong> ${escapeHtml(word)}<br>
-            <strong>Prononciation correct:</strong> ${escapeHtml(pronunciation.correct)}<br>
-            <strong>Votre Prononciation:</strong> ${escapeHtml(pronunciation.user || 'N/A')}
-            <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(word)}')">Écouter la prononciation</button> 
-        `;
-
-                // Corrigindo o atributo onclick (mantendo a correção anterior):
-                const speakButton = document.querySelector('#feedbackContent .btn-speak');
-                speakButton.setAttribute('onclick', `speakWord('${escapeHtml(word)}')`);
+                    <strong>Mot:</strong> ${escapeHtml(word)}<br>
+                    <strong>Prononciation correcte:</strong> ${escapeHtml(pronunciation.correct)}<br>
+                    <strong>Votre Prononciation:</strong> ${escapeHtml(pronunciation.user || 'N/A')}
+                    <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(word)}')">Écouter la prononciation</button> 
+                `;
             }
         }
-
-        function translateText() {
-            let text = document.getElementById('text').value;
-            disableButtons();
-            showMessage('Traduction en cours...');
-
-            fetch('/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'text=' + encodeURIComponent(text)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('translation').innerText = data.translation;
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la traduction.');
-                })
-                .finally(() => {
-                    enableButtons();
-                    hideMessage();
-                });
-        }
-
-
 
         function speakText() {
             let text = document.getElementById('text').value;
@@ -510,8 +465,6 @@
             var doc = new DOMParser().parseFromString(input, "text/html");
             return doc.documentElement.textContent;
         }
-
-
 
         function speakWord(word) {
             // Decodificar entidades HTML antes de enviar para o TTS
@@ -582,6 +535,9 @@
                 document.getElementById('recordButton').classList.add('recording');
                 document.getElementById('recordIcon').innerText = 'pause';
                 isRecording = true;
+            }).catch(error => {
+                console.error('Erreur lors de l\'accès au microphone:', error);
+                alert('Erreur lors de l\'accès au microphone. Veuillez vérifier les permissions.');
             });
         }
 
@@ -599,7 +555,7 @@
             convertToWav(blob).then(wavBlob => {
                 let textInput = document.getElementById('text');
                 let formData = new FormData();
-                formData.append('audio', wavBlob);
+                formData.append('audio', wavBlob, 'recording.wav');
                 formData.append('text', textInput.value);
                 formData.append('category', textInput.dataset.category || 'random'); // Inclui a categoria
                 let xhr = new XMLHttpRequest();
@@ -610,7 +566,6 @@
                         let percentComplete = (e.loaded / e.total) * 100;
                         document.getElementById('uploadProgress').value = percentComplete;
                         document.getElementById('uploadingText').innerText = `Envoi de l’audio... ${Math.round(percentComplete)}% terminé.`;
-
                     }
                 });
 
@@ -623,7 +578,6 @@
                         window.pronunciations = data.pronunciations;
                         document.getElementById('uploadingMessage').style.display = 'none';
                         document.getElementById('recordButton').disabled = false;
-                        updateCategoryProgress(); // Atualiza o progresso
                     } else {
                         handleUploadError(xhr);
                     }
@@ -683,21 +637,21 @@
                 pos += 4;
             }
 
-            setUint32(0x46464952);
-            setUint32(length - 8);
-            setUint32(0x45564157);
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
 
-            setUint32(0x20746d66);
-            setUint32(16);
-            setUint16(1);
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16); // length of fmt chunk
+            setUint16(1); // PCM
             setUint16(numOfChan);
             setUint32(sampleRate);
             setUint32(sampleRate * 2 * numOfChan);
             setUint16(numOfChan * 2);
             setUint16(16);
 
-            setUint32(0x61746164);
-            setUint32(length - pos - 4);
+            setUint32(0x61746164); // "data" chunk
+            setUint32(length - pos - 4); // data length
 
             for (let i = 0; i < buffer.numberOfChannels; i++)
                 channels.push(buffer.getChannelData(i));
@@ -714,34 +668,7 @@
             return bufferArr;
         }
 
-        // Função para atualizar o progresso da categoria
-        function updateCategoryProgress() {
-            let category = document.getElementById('category').value;
-            fetch('/get_progress')
-                .then(response => response.json())
-                .then(progressData => {
-                    if (category === 'random') {
-                        document.getElementById('categoryProgress').innerText = '';
-                    } else {
-                        let progress = progressData[category];
-                        if (progress) {
-                            document.getElementById('categoryProgress').innerText = `Il y a ${progress.total_sentences} phrases dans cette catégorie.`;
-                        }
-                    }
-                });
-        }
-
-        // Atualizar o progresso ao mudar a categoria
-        document.getElementById('category').addEventListener('change', function () {
-            updateCategoryProgress();
-        });
-
-        // Chamar a função ao carregar a página
-        window.onload = function () {
-            updateCategoryProgress();
-        };
-
-
+        // Função para gerar uma frase
         function generateSentence() {
             let category = document.getElementById('category').value;
             disableButtons();
@@ -756,20 +683,17 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Erro na resposta da API');
+                        throw new Error('Erreur dans la réponse de l\'API');
                     }
                     return response.json();
                 })
                 .then(data => {
                     if (data.error) {
                         alert(data.error);
-                    } else if (data.message) {
-                        alert(`${data.message}\nTaux moyen de réussite de la prononciation : ${data.average_ratio}%\nTaux moyen de complétude : ${data.average_completeness}%`);
                     } else {
                         document.getElementById('text').value = data.fr_sentence;
                         document.getElementById('text').dataset.category = data.category;
                         fetchPronunciation(data.fr_sentence);
-                        updateCategoryProgress();
                     }
                 })
                 .catch(error => {
@@ -782,14 +706,12 @@
                 });
         }
 
-
+        // Adicionar event listener para clicar nas palavras de pronúncia
         document.addEventListener('click', function (event) {
             if (event.target.classList.contains('word')) {
                 showPronunciation(event.target.innerText);
             }
         });
-
-
     </script>
 </body>
 
