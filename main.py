@@ -3,7 +3,8 @@ sys.setrecursionlimit(10000)
 import numpy as np
 import torch
 import torchaudio
-
+import editdistance
+from difflib import SequenceMatcher
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 from flask import Flask, request, render_template, jsonify, send_file
 import matplotlib.pyplot as plt
@@ -20,11 +21,14 @@ from gtts import gTTS
 from WordMatching import get_best_mapped_words
 import epitran
 import noisereduce as nr
-import jellyfish
 from concurrent.futures import ThreadPoolExecutor
-from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
-
+import logging
 app = Flask(__name__, template_folder="templates", static_folder="static")
+
+
+# Configuração do logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Variáveis globais para modelos
 model_asr, processor_asr, translation_model, tokenizer = None, None, None, None
@@ -299,27 +303,35 @@ def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
 
 def compare_phonetics(phonetic1, phonetic2, threshold=0.85):
-    # Calcular distância Damerau-Levenshtein normalizada
-    damerau_score = 1 - jellyfish.damerau_levenshtein_distance(phonetic1, phonetic2) / max(len(phonetic1), len(phonetic2), 1)
-
-    # Calcular similaridade Jaro-Winkler
-    jaro_winkler_score = jellyfish.jaro_winkler_similarity(phonetic1, phonetic2)
-
-    # Combinar ambos os resultados com uma ponderação ajustada
-    combined_score = 0.6 * damerau_score + 0.4 * jaro_winkler_score
-
-    # Suavização para pontuações próximas ao limite
+    # Calcular a distância de Levenshtein entre as pronúncias
+    lev_distance = editdistance.eval(phonetic1, phonetic2)
+    max_len = max(len(phonetic1), len(phonetic2), 1)
+    lev_score = 1 - (lev_distance / max_len)
+    
+    # Calcular similaridade de sequência usando difflib
+    seq_matcher = SequenceMatcher(None, phonetic1, phonetic2)
+    seq_score = seq_matcher.ratio()
+    
+    # Combinar os escores com pesos ajustados
+    combined_score = 0.7 * lev_score + 0.3 * seq_score
+    
+    # Ajustar o threshold suavemente
     smooth_threshold = threshold - 0.05 if combined_score >= threshold - 0.05 else threshold
-
+    
     # Verificar se a pontuação combinada atinge o limite ajustado
     return combined_score >= smooth_threshold
 
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Processamento de áudio:
 def reduce_noise(waveform, sample_rate):
-    # Aplicar redução de ruído com parâmetros ajustados
-    reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=1.0, stationary=False)
-    return reduced_waveform
+    try:
+        # Ajustar parâmetros para melhor redução de ruído
+        reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=1.0, stationary=False)
+        return reduced_waveform
+    except Exception as e:
+        logger.error(f"Erro na redução de ruído: {e}")
+        return waveform  # Retorna o waveform original em caso de erro
+
 
 def normalize_waveform(waveform):
     # Normalizar para o intervalo [-1, 1]
@@ -346,16 +358,25 @@ def process_audio(file_path):
             resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
             waveform_tensor = resampler(waveform_tensor)
         
-        # Processamento pelo modelo ASR
+        # Garantir que o tensor tenha apenas um canal (mono)
+        if waveform_tensor.shape[0] > 1:
+            waveform_tensor = torch.mean(waveform_tensor, dim=0, keepdim=True)
+        
+        # Processamento pelo modelo ASR com log detalhado
+        logger.info("Iniciando processamento de áudio pelo modelo ASR")
         inputs = processor_asr(waveform_tensor.squeeze(0), sampling_rate=16000, return_tensors="pt", padding=True)
         with torch.no_grad():
             logits = model_asr(inputs.input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
-        return processor_asr.batch_decode(predicted_ids)[0]
+        transcription = processor_asr.batch_decode(predicted_ids)[0]
+        logger.info(f"Transcrição obtida: {transcription}")
+        return transcription
+    except Exception as e:
+        logger.error(f"Erro ao processar áudio: {e}")
+        raise e  # Levanta a exceção para ser tratada na chamada da função
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)  # O arquivo é removido aqui
-
 ##--------------------------------------------------------------------------------------------------------------------------------
 # Rotas de API
 @app.route('/')
@@ -547,7 +568,6 @@ def get_progress():
             'sentences_done': sentences_done
         }
     return jsonify(progress_data)
-
 
 
 # Inicialização e execução do aplicativo
