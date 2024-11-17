@@ -3,9 +3,9 @@ import sys
 import torch
 import torchaudio
 sys.setrecursionlimit(10000)
-import librosa
+import unicodedata
 import numpy as np
-
+from spellchecker import SpellChecker
 import editdistance
 from difflib import SequenceMatcher
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
@@ -16,7 +16,6 @@ matplotlib.use('Agg')  # Configura o backend para não-GUI
 import re
 import os
 import tempfile
-import wave
 import pickle
 import random
 import pandas as pd
@@ -26,6 +25,7 @@ import epitran
 import noisereduce as nr
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import editdistance
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 
@@ -52,51 +52,21 @@ try:
     else:
         random_sentences = random_sentences_df
 except Exception as e:
-    print(f"Erro ao carregar data_de_en_fr.pickle: {e}")
+    #print(f"Erro ao carregar data_de_en_fr.pickle: {e}")
     random_sentences = []
 
 try:
     with open('frases_categorias.pickle', 'rb') as f:
         categorized_sentences = pickle.load(f)
 except Exception as e:
-    print(f"Erro ao carregar frases_categorias.pickle: {e}")
+    #print(f"Erro ao carregar frases_categorias.pickle: {e}")
     categorized_sentences = {}
 
 # Carregar o Modelo ASR Wav2Vec2 para Francês
+# Exemplo:
 processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-xls-r-1b-french")
 model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-xls-r-1b-french")
 
-
-
-
-'''
-# Exemplo com um modelo alternativo
-processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-french")
-
-# Carregar o Modelo ASR Wav2Vec2 para Francês
-processor_asr = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-xlsr-53-french")
-
-# Este modelo faz parte do projeto VoxPopuli, focado em dados de fala europeus.
-processor_asr = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-fr-voxpopuli-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-fr-voxpopuli-french")
-
-# Outra variante treinada para o francês, oferecendo diferentes características de desempenho.
-processor_asr = Wav2Vec2Processor.from_pretrained("m3hrdadfi/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("m3hrdadfi/wav2vec2-large-xlsr-53-french")
-
-# Desenvolvido pelo grupo Helsinki-NLP, este modelo também é otimizado para o francês.
-processor_asr = Wav2Vec2Processor.from_pretrained("Helsinki-NLP/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("Helsinki-NLP/wav2vec2-large-xlsr-53-french")
-
-#patrickvonplaten/wav2vec2-large-xlsr-53-french
-Este modelo é uma variante do Wav2Vec2 treinada especificamente para o francês.
-processor_asr = Wav2Vec2Processor.from_pretrained("patrickvonplaten/wav2vec2-large-xlsr-53-french")
-model_asr = Wav2Vec2ForCTC.from_pretrained("patrickvonplaten/wav2vec2-large-xlsr-53-french")
-
-
-'''
 
 
 
@@ -111,14 +81,12 @@ target_language = 'pt'  # Português
 
 
 # Mapeamento atualizado com regras contextuais
+# Mapeamento atualizado com regras contextuais
 french_to_portuguese_phonemes = {
     # Vogais orais
     'i': {'default': 'i'},
     'e': {'default': 'e'},
-    'ɛ': {
-        'default': 'é',
-        'before_nasal': 'ê',
-    },
+    'ɛ': {'default': 'é', 'before_nasal': 'ê'},
     'a': {'default': 'a'},
     'ɑ': {'default': 'a'},
     'ɔ': {'default': 'ó'},
@@ -142,40 +110,18 @@ french_to_portuguese_phonemes = {
 
     # Consoantes
     'b': {'default': 'b'},
-    'd': {
-    'default': 'd',
-    'before_i': 'dj',
-},
+    'd': {'default': 'd', 'before_i': 'dj'},
     'f': {'default': 'f'},
     'g': {'default': 'g'},
-    'ʒ': {
-        'default': 'j',
-        'word_initial': 'j',
-        'after_nasal': 'j',
-    },
-    'k': {
-        'default': 'k',
-        'before_front_vowel': 'qu',
-    },
+    'ʒ': {'default': 'j', 'word_initial': 'j', 'after_nasal': 'j'},
+    'k': {'default': 'k', 'before_front_vowel': 'qu'},
     'l': {'default': 'l'},
     'm': {'default': 'm'},
     'n': {'default': 'n'},
     'p': {'default': 'p'},
-    'ʁ': {
-        'default': 'r',
-        'word_initial': 'h',
-        'after_vowel': 'rr',
-        'after_consonant': 'r',
-    },
-    's': {
-    'default': 's',
-    'between_vowels': 'z',
-},
-    't': {
-    'default': 't',
-    'before_i': 'tch',
-},
-
+    'ʁ': {'default': 'r', 'word_initial': 'h', 'after_vowel': 'rr', 'after_consonant': 'r'},
+    's': {'default': 's', 'between_vowels': 'z'},
+    't': {'default': 't', 'before_i': 'tch'},
     'v': {'default': 'v'},
     'z': {'default': 'z'},
     'ʃ': {'default': 'ch'},
@@ -188,8 +134,17 @@ french_to_portuguese_phonemes = {
     # Fonemas compostos
     'sj': {'default': 'ch'},  # Exemplo: "attention"
     'ks': {'default': 'x'},   # Exemplo: "exact"
-    # Adicione outros conforme necessário
+
+    # Outros fonemas
+    'x': {'default': 'x'},
+    'ʎ': {'default': 'lh'},
+    'ʔ': {'default': ''},  # Fonema glotal stop geralmente não tem equivalente em português
+    'θ': {'default': 't'},  # Adapte conforme necessário
+    'ð': {'default': 'd'},  # Adapte conforme necessário
+    'ɾ': {'default': 'r'},
+    'ʕ': {'default': 'r'},  # Adapte conforme necessário
 }
+
 
 # Características fonéticas
 phonetic_features = {
@@ -267,6 +222,7 @@ h_aspirate_words = [
     "hurler", "huron", "husky", "hutte", "hyène"
 ]
 
+
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
     try:
@@ -285,18 +241,24 @@ def remove_silent_endings(pronunciation, word):
 
 def transliterate_and_convert_sentence(sentence):
     words = sentence.split()
+    #print(f"Original Sentence: {sentence}")
     # Tratar apóstrofos
     words = handle_apostrophes(words)
+    #print(f"Após tratar apóstrofos: {words}")
     pronunciations = [get_pronunciation(word) for word in words]
+    #print(f"Pronúncias transliteradas: {pronunciations}")
     # Aplicar liaisons
     pronunciations = apply_liaisons(words, pronunciations)
+    #print(f"Após aplicar liaisons: {pronunciations}")
     # Remover terminações silenciosas para cada palavra e pronúncia
     pronunciations = [remove_silent_endings(pron, word) for pron, word in zip(pronunciations, words)]
+    #print(f"Após remover terminações silenciosas: {pronunciations}")
     # Converter cada pronúncia para português
     pronunciations_pt = [
         convert_pronunciation_to_portuguese(pron)
         for pron in pronunciations
     ]
+    #print(f"Pronúncias convertidas para português: {pronunciations_pt}")
     return ' '.join(pronunciations_pt)
 
 def split_into_phonemes(pronunciation):
@@ -313,9 +275,9 @@ def split_into_phonemes(pronunciation):
                 break
         if not matched:
             phonemes.append(pronunciation[idx])
+            logger.warning(f"Fonema não mapeado: '{pronunciation[idx]}' na pronúncia '{pronunciation}'")
             idx += 1
     return phonemes
-
 
 def convert_pronunciation_to_portuguese(pronunciation):
     phonemes = split_into_phonemes(pronunciation)
@@ -329,55 +291,45 @@ def convert_pronunciation_to_portuguese(pronunciation):
         context = 'default'
         
         next_phoneme = phonemes[idx + 1] if idx + 1 < length else ''
+        prev_phoneme = phonemes[idx - 1] if idx > 0 else ''
         
         # Definir listas de vogais
         vowels = ['a', 'e', 'i', 'o', 'u', 'ɛ', 'ɔ', 'ɑ', 'ø', 'œ', 'ə']
         next_is_i = next_phoneme in ['i', 'j', 'ɥ']
+        prev_is_vowel = prev_phoneme in vowels
+        next_is_vowel = next_phoneme in vowels
         
         # Definir o contexto
         if phoneme in ['t', 'd'] and next_is_i:
             context = 'before_i'
+            #print(f"Contexto 'before_i' para fonema '{phoneme}'")
             idx += 1  # Pular o próximo fonema para evitar duplicação
-        elif phoneme == 's':
-            prev_phoneme = phonemes[idx - 1] if idx > 0 else ''
-            prev_is_vowel = prev_phoneme in vowels
-            next_is_vowel = next_phoneme in vowels
-            if prev_is_vowel and next_is_vowel:
-                context = 'between_vowels'
+        elif phoneme == 's' and prev_is_vowel and next_is_vowel:
+            context = 'between_vowels'
+            #print(f"Contexto 'between_vowels' para fonema '{phoneme}'")
         
         # Obter o mapeamento
         mapped_phoneme = mapping.get(context, mapping['default'])
+        #print(f"Fonema '{phoneme}' mapeado para '{mapped_phoneme}' com contexto '{context}'")
         result.append(mapped_phoneme)
         idx += 1
     
     return ''.join(result)
 
-
-
-
 def handle_apostrophes(words_list):
     new_words = []
-    skip_next = False
-    for i, word in enumerate(words_list):
-        if skip_next:
-            skip_next = False
-            continue
+    for word in words_list:
         if "'" in word:
             prefix, sep, suffix = word.partition("'")
             # Contrações comuns
             if prefix.lower() in ["l", "d", "j", "qu", "n", "m", "c"]: 
-                if i + 1 < len(words_list):
-                    combined_word = prefix + suffix + words_list[i + 1]
-                    new_words.append(combined_word)
-                    skip_next = True
-                else:
-                    new_words.append(word)
+                combined_word = prefix + suffix
+                new_words.append(combined_word)
             else:
                 new_words.append(word)
         else:
             new_words.append(word)
     return new_words
-
 
 def apply_liaisons(words_list, pronunciations):
     new_pronunciations = []
@@ -392,6 +344,7 @@ def apply_liaisons(words_list, pronunciations):
 
         # Verificar se a próxima palavra começa com vogal ou 'h' mudo
         if re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE) and not h_aspirate:
+            original_pron = current_pron
             # Aplicar liaison
             if current_word.lower() == "les":
                 current_pron = current_pron.rstrip('e') + 'z'
@@ -409,22 +362,28 @@ def apply_liaisons(words_list, pronunciations):
                 current_pron = current_pron + 'p'
             elif current_word[-1] == 'r':
                 current_pron = current_pron + 'r'
-            # Liaison com 'd' (ex: d'une)
             elif current_word.lower() == "d'" and re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE):
                 current_pron = current_pron.rstrip('e') + 'z'  # Adiciona /z/
+            
+           
+        
         # Caso contrário, não aplica liaison
         new_pronunciations.append(current_pron)
     # Adicionar a última pronúncia
     new_pronunciations.append(pronunciations[-1])
     return new_pronunciations
 
+def remove_accents(text):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
 
 def normalize_text(text):
     text = text.lower()
     text = text.replace("’", "'")
-    # Manter apóstrofos dentro das palavras e remover outros caracteres especiais
+    text = remove_accents(text)
     text = re.sub(r"[^\w\s']", '', text)
-    # Garantir que não haja espaços desnecessários ao redor dos apóstrofos
     text = re.sub(r"\s+'", "'", text)
     text = re.sub(r"'\s+", "'", text)
     return text.strip()
@@ -432,8 +391,9 @@ def normalize_text(text):
 def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
 #--------------------------------------------------------------------------
-#funções para comparação fonetica
-def compare_phonetics(phonetic1, phonetic2, threshold=0.90):
+
+# Funções para comparação fonética
+def compare_phonetics(phonetic1, phonetic2, threshold=0.95):
     alignment_score = needleman_wunsch(phonetic1, phonetic2)
     max_possible_score = max(len(phonetic1), len(phonetic2))
     normalized_score = alignment_score / max_possible_score
@@ -464,6 +424,7 @@ def calculate_similarity(p1, p2):
     features1 = phonetic_features.get(p1)
     features2 = phonetic_features.get(p2)
     if not features1 or not features2:
+        logger.warning(f"Fonema desconhecido para similaridade: '{p1}' ou '{p2}'")
         return -1  # Penalidade máxima para fonemas desconhecidos
     score = 0
     total = 0
@@ -476,22 +437,76 @@ def calculate_similarity(p1, p2):
                 score += 1
 
     # Retornar a proporção de características correspondentes
-    return (score / total) * 2 - 1  # Normalizado entre -1 e 1
-
+    similarity_score = (score / total) * 2 - 1  # Normalizado entre -1 e 1
+    logger.debug(f"Similaridade entre '{p1}' e '{p2}': {similarity_score}")
+    return similarity_score
 
 # Atualizar get_similarity para usar calculate_similarity
 def get_similarity(p1, p2):
     if p1 == p2:
         return 1.0
     else:
-        return calculate_similarity(p1, p2) - 1  # Subtraia 1 para manter a consistência com penalidades
+        return calculate_similarity(p1, p2)  # Remover a subtração de 1 para manter a consistência
+
+def calculate_wer(reference, hypothesis):
+    # Usar SequenceMatcher para considerar similaridades
+    matcher = SequenceMatcher(None, reference, hypothesis)
+    blocks = matcher.get_matching_blocks()
+    total_distance = len(reference) + len(hypothesis) - 2 * sum(triple.size for triple in blocks)
+    wer = total_distance / len(reference) if len(reference) > 0 else 0
+    return wer
+
+def calculate_per(reference_phonemes, hypothesis_phonemes):
+    # Usar a mesma lógica do WER, mas com fonemas
+    return calculate_wer(reference_phonemes, hypothesis_phonemes)
+
+def calculate_phoneme_accuracy(reference_words, hypothesis_words):
+    total_phonemes = 0
+    total_distance = 0
+
+    for ref_word, hyp_word in zip(reference_words, hypothesis_words):
+        ref_pronunciation = transliterate_and_convert_sentence(ref_word)
+        hyp_pronunciation = transliterate_and_convert_sentence(hyp_word)
+
+        ref_phonemes = split_into_phonemes(ref_pronunciation)
+        hyp_phonemes = split_into_phonemes(hyp_pronunciation)
+
+        #print(f"Referência - Palavra: '{ref_word}', Pronúncia: '{ref_pronunciation}', Fonemas: {ref_phonemes}")
+        #print(f"Hipótese   - Palavra: '{hyp_word}', Pronúncia: '{hyp_pronunciation}', Fonemas: {hyp_phonemes}")
+
+        total_phonemes += len(ref_phonemes)
+        distance = editdistance.eval(ref_phonemes, hyp_phonemes)
+        total_distance += distance
+
+    if total_phonemes > 0:
+        phoneme_accuracy = ((total_phonemes - total_distance) / total_phonemes) * 100
+    else:
+        phoneme_accuracy = 0
+
+    #print(f"Phoneme Accuracy: {phoneme_accuracy}")
+    return phoneme_accuracy
 
 ##--------------------------------------------------------------------------------------------------------------------------------# Processamento de áudio:
-# Processamento de áudio:
+
+
+# Funções de processamento de áudio
+def remove_silence(waveform, sample_rate, threshold=0.01):
+    # Remove silêncios no início e no final do áudio
+    waveform = waveform.squeeze(0)  # Remove a dimensão do canal se existir
+    energy = waveform.abs()
+    mask = energy > threshold
+    if mask.any():
+        indices = torch.nonzero(mask).squeeze()
+        start = indices[0].item()
+        end = indices[-1].item()
+        trimmed_waveform = waveform[start:end+1]
+        return trimmed_waveform.unsqueeze(0)  # Adiciona de volta a dimensão do canal
+    else:
+        return waveform.unsqueeze(0)  # Retorna o waveform original com dimensão do canal
+
 def reduce_noise(waveform, sample_rate):
     try:
-        # Ajustar parâmetros para melhor redução de ruído
-        reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=1.0, stationary=False)
+        reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=0.5, stationary=False)
         return reduced_waveform
     except Exception as e:
         logger.error(f"Erro na redução de ruído: {e}")
@@ -510,43 +525,55 @@ def resample_waveform(waveform, orig_sr, target_sr=16000):
         waveform = resampler(waveform)
     return waveform
 
-
 def process_audio(file_path):
     try:
         # Carregar o áudio
         waveform, sample_rate = torchaudio.load(file_path)
+        #print(f"Áudio carregado: waveform shape {waveform.shape}, sample_rate {sample_rate}")
         
         # Converter para mono se necessário
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
+            #print(f"Convertido para mono: waveform shape {waveform.shape}")
+        
+        # Remover silêncios
+        waveform = remove_silence(waveform, sample_rate)
+        #print(f"Após remover silêncios: waveform shape {waveform.shape}")
         
         # Resamplear para 16000 Hz
         waveform = resample_waveform(waveform, sample_rate, target_sr=16000)
         sample_rate = 16000  # Atualizar o sample_rate após resamplear
+        #print(f"Após resamplear: waveform shape {waveform.shape}, sample_rate {sample_rate}")
         
         # Redução de ruído
         waveform_np = waveform.squeeze().numpy()
+        #print(f"Waveform convertido para numpy array: shape {waveform_np.shape}")
         waveform_np = reduce_noise(waveform_np, sample_rate)
+        #print(f"Após redução de ruído: waveform_np shape {waveform_np.shape}")
         
         # Converter de volta para tensor
         waveform = torch.tensor(waveform_np, dtype=torch.float32).unsqueeze(0)
+        #print(f"Waveform convertido de volta para tensor: shape {waveform.shape}")
         
         # Normalização
         waveform = normalize_waveform(waveform)
+        #print(f"Após normalização: waveform shape {waveform.shape}")
         
         # Processamento pelo modelo ASR
-        logger.info("Iniciando processamento de áudio pelo modelo ASR")
+        #print("Iniciando processamento de áudio pelo modelo ASR")
         inputs = processor_asr(waveform.squeeze(0), sampling_rate=sample_rate, return_tensors="pt")
+        #print(f"Inputs preparados para o modelo ASR: {inputs.input_values.shape}")
         with torch.no_grad():
             logits = model_asr(inputs.input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         
         # Decodificação correta
         transcription = processor_asr.decode(predicted_ids[0], skip_special_tokens=True)
-        logger.info(f"Transcrição obtida: {transcription}")
+       
+        #print(f"Transcrição obtida: {transcription}")
         return transcription
     except Exception as e:
-        logger.error(f"Erro ao processar áudio: {e}")
+        logger.exception(f"Erro ao processar áudio: {e}")
         raise e
     finally:
         if os.path.exists(file_path):
@@ -620,9 +647,9 @@ def upload():
     # Enviar para processamento assíncrono
     future = executor.submit(process_audio, tmp_file_path)
     try:
-        transcription = future.result(timeout=120)  # Timeout de 12 segundos
+        transcription = future.result(timeout=120)  # Timeout de 120 segundos
     except Exception as e:
-        logger.error(f"Erro ao processar áudio: {e}")  # Log do erro
+        logger.exception(f"Erro ao processar áudio: {e}")  # Log do erro
         return jsonify({"error": "Erro ao processar o áudio."}), 500
     
     # Normalização e comparação de transcrições
@@ -630,7 +657,18 @@ def upload():
     normalized_text = normalize_text(text)
     words_estimated = normalized_transcription.split()
     words_real = normalized_text.split()
-    mapped_words, mapped_words_indices = get_best_mapped_words(words_estimated, words_real)
+
+    # Validar fonemas (opcional)
+    # validate_phonemes(words_real, words_estimated)
+
+    # Calcular WER e acurácia
+    wer = calculate_wer(words_real, words_estimated)
+    accuracy = (1 - wer) * 100
+
+    # Calcular acurácia de fonemas
+    phoneme_accuracy = calculate_phoneme_accuracy(words_real, words_estimated)
+
+    print(f"WER: {wer}, Acurácia: {accuracy}, Acurácia de Fonemas: {phoneme_accuracy}")
 
     # Inicialização de variáveis para feedback
     diff_html = []
@@ -641,8 +679,8 @@ def upload():
 
     # Comparação palavra a palavra
     for idx, real_word in enumerate(words_real):
-        if idx < len(mapped_words):
-            mapped_word = mapped_words[idx]
+        if idx < len(words_estimated):
+            mapped_word = words_estimated[idx]
             correct_pronunciation = transliterate_and_convert_sentence(real_word)
             user_pronunciation = transliterate_and_convert_sentence(mapped_word)
             if compare_phonetics(correct_pronunciation, user_pronunciation):
@@ -676,7 +714,7 @@ def upload():
     diff_html = ' '.join(diff_html)
     total_words = correct_count + incorrect_count
     ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
-    completeness_score = (len(words_estimated) / len(words_real)) * 100
+    completeness_score = (len(words_estimated) / len(words_real)) * 100 if len(words_real) > 0 else 0
 
     return jsonify({
         'ratio': f"{ratio:.2f}",
