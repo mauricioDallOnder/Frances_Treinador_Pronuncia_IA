@@ -22,5 +22,5 @@ matplotlib
 jellyfish
 SentencePiece
 accelerate
-language-tool-python
+pyspellchecker
 
