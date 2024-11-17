@@ -110,66 +110,88 @@ source_language = 'fr'  # Francês
 target_language = 'pt'  # Português
 
 # Mapeamento atualizado de fonemas franceses para português
+# Mapeamento atualizado de fonemas franceses para português com sensibilidade ao contexto
+# Mapeamento atualizado com regras contextuais
 french_to_portuguese_phonemes = {
     # Vogais orais
-    'i': 'i',          # [i] em "ici" [isi]
-    'e': 'e',          # [e] em "été" [ete]
-    'ɛ': 'é',          # [ɛ] em "si" [si], considerar 'ê' em alguns contextos
-    'a': 'a',          # [a] em "année" [ane]
-    'ɑ': 'a',          # [ɑ] em "pâte" [pat]
-    'ɔ': 'ó',          # [ɔ] em "peu" [pø]
-    'o': 'ô',          # [o] em "aucune" [okyn]
-    'u': 'u',          # [u] em "ouverte" [uvɛʁt]
-    'y': 'u',          # [y] em "unique" [ynik]
-    'ø': 'eu',         # [ø] em "Europe" [øʁɔp], alternativamente 'êu'
-    'œ': 'é',          # [œ] em "œil" [œːj]
-    'ə': 'e',          # [ə] em "besoin" [bəzwɛ̃]
+    'i': {'default': 'i'},
+    'e': {'default': 'e'},
+    'ɛ': {
+        'default': 'é',
+        'before_nasal': 'ê',
+    },
+    'a': {'default': 'a'},
+    'ɑ': {'default': 'a'},
+    'ɔ': {'default': 'ó'},
+    'o': {'default': 'ô'},
+    'u': {'default': 'u'},
+    'y': {'default': 'u'},
+    'ø': {'default': 'eu'},
+    'œ': {'default': 'é'},
+    'ə': {'default': 'e'},
 
     # Vogais nasais
-    'ɛ̃': 'ẽ',         # [ɛ̃] em "ensuite" [ɑ̃sɥit]
-    'ɑ̃': 'ã',         # [ɑ̃] em "oncle" [ɔ̃kl], "grande" [ɡʁɑ̃ːd]
-    'ɔ̃': 'õ',         # [ɔ̃] em "nous" [nu], "homme" [ɔm], "oncle" [ɔ̃kl]
-    'œ̃': 'ũ',         # [œ̃] em "œuf" [œf]
+    'ɛ̃': {'default': 'ẽ'},
+    'ɑ̃': {'default': 'ã'},
+    'ɔ̃': {'default': 'õ'},
+    'œ̃': {'default': 'ũ'},
 
     # Semivogais
-    'j': 'i',          # [j] em "hiérarchie" [jeʁaʁʃi]
-    'w': 'u',          # [w] em "oui" [wi]
-    'ɥ': 'u',          # [ɥ] em "huitième" [ɥitjɛm]
+    'j': {'default': 'i'},
+    'w': {'default': 'u'},
+    'ɥ': {'default': 'u'},
 
     # Consoantes
-    'b': 'b',          # [b] em "beaucoup" [boku]
-    'd': 'd',          # [d] em "de" [də]
-    'f': 'f',          # [f] em "femme" [fam]
-    'g': 'g',          # [g] em "gauche" [ɡoːʃ]
-    'ʒ': 'j',          # [ʒ] em "jamais" [ʒamɛ], "zone" [zoːn], "jamais" [ʒamɛ]
-    'k': 'k',          # [k] em "que" [kə]
-    'l': 'l',          # [l] em "le" [lə]
-    'm': 'm',          # [m] em "même" [mɛm]
-    'n': 'n',          # [n] em "nous" [nu]
-    'p': 'p',          # [p] em "peu" [pø]
-    'ʁ': 'r',          # [ʁ] em "raison" [ʁɛzɔ̃], "raison" [ʁɛzɔ̃]
-    's': 's',          # [s] em "si" [si]
-    't': 't',          # [t] em "temps" [tɑ̃]
-    'v': 'v',          # [v] em "vous" [vu]
-    'z': 'z',          # [z] em "zone" [zoːn]
-    'ʃ': 'ch',         # [ʃ] em "chef" [ʃɛf], "tchèque" [tʃɛk]
-    'dʒ': 'dj',        # [dʒ] em "Djibouti" [dʒibuti]
-    'tʃ': 'tch',       # [tʃ] em "tchèque" [tʃɛk]
-    'ɲ': 'nh',         # [ɲ] em "gagner" [ɡaɲe], "ligne" [liɲ]
-    'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
-    'ç': 's',          # [ç] em "ça" [sa]
+    'b': {'default': 'b'},
+    'd': {
+    'default': 'd',
+    'before_i': 'dj',
+},
+    'f': {'default': 'f'},
+    'g': {'default': 'g'},
+    'ʒ': {
+        'default': 'j',
+        'word_initial': 'j',
+        'after_nasal': 'j',
+    },
+    'k': {
+        'default': 'k',
+        'before_front_vowel': 'qu',
+    },
+    'l': {'default': 'l'},
+    'm': {'default': 'm'},
+    'n': {'default': 'n'},
+    'p': {'default': 'p'},
+    'ʁ': {
+        'default': 'r',
+        'word_initial': 'h',
+        'after_vowel': 'rr',
+        'after_consonant': 'r',
+    },
+    's': {
+    'default': 's',
+    'between_vowels': 'z',
+},
+    't': {
+    'default': 't',
+    'before_i': 'tch',
+},
 
-    # Adicionando mapeamentos específicos conforme a tabela
-    'ʒ': 'j',          # [ʒ] em "jamais" [ʒamɛ]
-    'dʒ': 'dj',        # [dʒ] em "Djibouti" [dʒibuti]
-    'tʃ': 'tch',       # [tʃ] em "tchèque" [tʃɛk]
-    'ŋ': 'ng',         # [ŋ] em "meeting" [mitiŋ]
-    'ɲ': 'nh',         # [ɲ] em "gagner" [ɡaɲe]
-    'ʁ': 'r',          # [ʁ] em "raison" [ʁɛzɔ̃]
-    'ç': 's',          # [ç] em "ça" [sa]
-    
-    # Outros fonemas podem ser adicionados conforme necessário
+    'v': {'default': 'v'},
+    'z': {'default': 'z'},
+    'ʃ': {'default': 'ch'},
+    'dʒ': {'default': 'dj'},
+    'tʃ': {'default': 'tch'},
+    'ɲ': {'default': 'nh'},
+    'ŋ': {'default': 'ng'},
+    'ç': {'default': 's'},
+
+    # Fonemas compostos
+    'sj': {'default': 'ch'},  # Exemplo: "attention"
+    'ks': {'default': 'x'},   # Exemplo: "exact"
+    # Adicione outros conforme necessário
 }
+
 
 
 # Lista de palavras com 'h' aspirado
@@ -216,12 +238,61 @@ def transliterate_and_convert_sentence(sentence):
     ]
     return ' '.join(pronunciations_pt)
 
+def split_into_phonemes(pronunciation):
+    phonemes = []
+    idx = 0
+    while idx < len(pronunciation):
+        matched = False
+        for phoneme in sorted(french_to_portuguese_phonemes.keys(), key=len, reverse=True):
+            length = len(phoneme)
+            if pronunciation[idx:idx+length] == phoneme:
+                phonemes.append(phoneme)
+                idx += length
+                matched = True
+                break
+        if not matched:
+            phonemes.append(pronunciation[idx])
+            idx += 1
+    return phonemes
+
+
 def convert_pronunciation_to_portuguese(pronunciation):
-    # Substituir símbolos fonéticos usando o mapeamento
-    sorted_phonemes = sorted(french_to_portuguese_phonemes.keys(), key=len, reverse=True)
-    for phoneme in sorted_phonemes:
-        pronunciation = pronunciation.replace(phoneme, french_to_portuguese_phonemes[phoneme])
-    return pronunciation
+    phonemes = split_into_phonemes(pronunciation)
+    result = []
+    idx = 0
+    length = len(phonemes)
+    
+    while idx < length:
+        phoneme = phonemes[idx]
+        mapping = french_to_portuguese_phonemes.get(phoneme, {'default': phoneme})
+        context = 'default'
+        
+        next_phoneme = phonemes[idx + 1] if idx + 1 < length else ''
+        
+        # Definir listas de vogais
+        vowels = ['a', 'e', 'i', 'o', 'u', 'ɛ', 'ɔ', 'ɑ', 'ø', 'œ', 'ə']
+        next_is_i = next_phoneme in ['i', 'j', 'ɥ']
+        
+        # Definir o contexto
+        if phoneme in ['t', 'd'] and next_is_i:
+            context = 'before_i'
+            idx += 1  # Pular o próximo fonema para evitar duplicação
+        elif phoneme == 's':
+            prev_phoneme = phonemes[idx - 1] if idx > 0 else ''
+            prev_is_vowel = prev_phoneme in vowels
+            next_is_vowel = next_phoneme in vowels
+            if prev_is_vowel and next_is_vowel:
+                context = 'between_vowels'
+        
+        # Obter o mapeamento
+        mapped_phoneme = mapping.get(context, mapping['default'])
+        result.append(mapped_phoneme)
+        idx += 1
+    
+    return ''.join(result)
+
+
+
 
 def handle_apostrophes(words_list):
     new_words = []
@@ -527,6 +598,8 @@ def speak():
     file_path = tempfile.mktemp(suffix=".mp3")
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
+
+
 
 
 
