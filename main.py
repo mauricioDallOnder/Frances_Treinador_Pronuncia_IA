@@ -109,8 +109,7 @@ epi = epitran.Epitran('fra-Latn')
 source_language = 'fr'  # Francês
 target_language = 'pt'  # Português
 
-# Mapeamento atualizado de fonemas franceses para português
-# Mapeamento atualizado de fonemas franceses para português com sensibilidade ao contexto
+
 # Mapeamento atualizado com regras contextuais
 french_to_portuguese_phonemes = {
     # Vogais orais
@@ -191,6 +190,68 @@ french_to_portuguese_phonemes = {
     'ks': {'default': 'x'},   # Exemplo: "exact"
     # Adicione outros conforme necessário
 }
+
+# Características fonéticas
+phonetic_features = {
+    # Vogais
+    'a':  {'type': 'vowel', 'height': 'open', 'backness': 'front',  'rounded': False, 'nasal': False},
+    'e':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'front',  'rounded': False, 'nasal': False},
+    'i':  {'type': 'vowel', 'height': 'close', 'backness': 'front',  'rounded': False, 'nasal': False},
+    'o':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'back',   'rounded': True,  'nasal': False},
+    'u':  {'type': 'vowel', 'height': 'close', 'backness': 'back',   'rounded': True,  'nasal': False},
+    'ɛ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': False, 'nasal': False},
+    'ɔ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'back',   'rounded': True,  'nasal': False},
+    'ɑ':  {'type': 'vowel', 'height': 'open', 'backness': 'back',   'rounded': False, 'nasal': False},
+    'ø':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'front',  'rounded': True,  'nasal': False},
+    'œ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': True,  'nasal': False},
+    'ə':  {'type': 'vowel', 'height': 'mid', 'backness': 'central', 'rounded': False, 'nasal': False},
+    'y':  {'type': 'vowel', 'height': 'close', 'backness': 'front',  'rounded': True,  'nasal': False},
+    # Vogais nasais
+    'ɛ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': False, 'nasal': True},
+    'ɑ̃': {'type': 'vowel', 'height': 'open', 'backness': 'back',   'rounded': False, 'nasal': True},
+    'ɔ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'back',   'rounded': True,  'nasal': True},
+    'œ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': True,  'nasal': True},
+    # Semivogais
+    'j':  {'type': 'approximant', 'place': 'palatal', 'voiced': True,  'nasal': False},
+    'w':  {'type': 'approximant', 'place': 'labio-velar', 'voiced': True,  'nasal': False},
+    'ɥ':  {'type': 'approximant', 'place': 'labio-palatal', 'voiced': True,  'nasal': False},
+    # Consoantes
+    'p':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'plosive',           'voiced': False},
+    'b':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'plosive',           'voiced': True},
+    't':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'plosive',           'voiced': False},
+    'd':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'plosive',           'voiced': True},
+    'k':  {'type': 'consonant', 'place': 'velar',        'manner': 'plosive',           'voiced': False},
+    'g':  {'type': 'consonant', 'place': 'velar',        'manner': 'plosive',           'voiced': True},
+    'f':  {'type': 'consonant', 'place': 'labiodental',  'manner': 'fricative',         'voiced': False},
+    'v':  {'type': 'consonant', 'place': 'labiodental',  'manner': 'fricative',         'voiced': True},
+    's':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'fricative',         'voiced': False},
+    'z':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'fricative',         'voiced': True},
+    'ʃ':  {'type': 'consonant', 'place': 'postalveolar', 'manner': 'fricative',         'voiced': False},
+    'ʒ':  {'type': 'consonant', 'place': 'postalveolar', 'manner': 'fricative',         'voiced': True},
+    'ʁ':  {'type': 'consonant', 'place': 'uvular',       'manner': 'fricative',         'voiced': True},
+    'h':  {'type': 'consonant', 'place': 'glottal',      'manner': 'fricative',         'voiced': False},
+    'm':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'nasal',             'voiced': True},
+    'n':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'nasal',             'voiced': True},
+    'ɲ':  {'type': 'consonant', 'place': 'palatal',      'manner': 'nasal',             'voiced': True},
+    'ŋ':  {'type': 'consonant', 'place': 'velar',        'manner': 'nasal',             'voiced': True},
+    'l':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'lateral_approximant', 'voiced': True},
+    'tʃ': {'type': 'consonant', 'place': 'postalveolar', 'manner': 'affricate',         'voiced': False},
+    'dʒ': {'type': 'consonant', 'place': 'postalveolar', 'manner': 'affricate',         'voiced': True},
+    'ç':  {'type': 'consonant', 'place': 'palatal',      'manner': 'fricative',         'voiced': False},
+    'ɥ':  {'type': 'consonant', 'place': 'labial-palatal', 'manner': 'approximant',     'voiced': True},
+    # Outros fonemas
+    'x':  {'type': 'consonant', 'place': 'velar',        'manner': 'fricative',         'voiced': False},
+    'ʎ':  {'type': 'consonant', 'place': 'palatal',      'manner': 'lateral_approximant', 'voiced': True},
+    # Fonemas adicionais conforme necessário
+    'ʔ':  {'type': 'consonant', 'place': 'glottal',      'manner': 'plosive',           'voiced': False},
+    'θ':  {'type': 'consonant', 'place': 'dental',       'manner': 'fricative',         'voiced': False},
+    'ð':  {'type': 'consonant', 'place': 'dental',       'manner': 'fricative',         'voiced': True},
+    'ʒ':  {'type': 'consonant', 'place': 'postalveolar', 'manner': 'fricative',         'voiced': True},
+    'w':  {'type': 'approximant', 'place': 'labio-velar', 'voiced': True},
+    'ɾ':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'tap',               'voiced': True},
+    'ʕ':  {'type': 'consonant', 'place': 'pharyngeal',   'manner': 'fricative',         'voiced': True},
+}
+
 
 
 
@@ -370,25 +431,60 @@ def normalize_text(text):
 
 def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
-
+#--------------------------------------------------------------------------
+#funções para comparação fonetica
 def compare_phonetics(phonetic1, phonetic2, threshold=0.90):
-    # Calcular a distância de Levenshtein entre as pronúncias
-    lev_distance = editdistance.eval(phonetic1, phonetic2)
-    max_len = max(len(phonetic1), len(phonetic2), 1)
-    lev_score = 1 - (lev_distance / max_len)
-    
-    # Calcular similaridade de sequência usando difflib
-    seq_matcher = SequenceMatcher(None, phonetic1, phonetic2)
-    seq_score = seq_matcher.ratio()
-    
-    # Combinar os escores com pesos ajustados
-    combined_score = 0.7 * lev_score + 0.3 * seq_score
-    
-    # Ajustar o threshold suavemente
-    smooth_threshold = threshold - 0.05 if combined_score >= threshold - 0.05 else threshold
-    
-    # Verificar se a pontuação combinada atinge o limite ajustado
-    return combined_score >= smooth_threshold
+    alignment_score = needleman_wunsch(phonetic1, phonetic2)
+    max_possible_score = max(len(phonetic1), len(phonetic2))
+    normalized_score = alignment_score / max_possible_score
+    return normalized_score >= threshold
+
+def needleman_wunsch(seq1, seq2, gap_penalty=-1):
+    n = len(seq1)
+    m = len(seq2)
+    score_matrix = [[0] * (m + 1) for _ in range(n + 1)]
+
+    # Inicializar a primeira linha e coluna
+    for i in range(n + 1):
+        score_matrix[i][0] = gap_penalty * i
+    for j in range(m + 1):
+        score_matrix[0][j] = gap_penalty * j
+
+    # Preencher a matriz de pontuação
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            match = score_matrix[i - 1][j - 1] + get_similarity(seq1[i - 1], seq2[j - 1])
+            delete = score_matrix[i - 1][j] + gap_penalty
+            insert = score_matrix[i][j - 1] + gap_penalty
+            score_matrix[i][j] = max(match, delete, insert)
+
+    return score_matrix[n][m]
+
+def calculate_similarity(p1, p2):
+    features1 = phonetic_features.get(p1)
+    features2 = phonetic_features.get(p2)
+    if not features1 or not features2:
+        return -1  # Penalidade máxima para fonemas desconhecidos
+    score = 0
+    total = 0
+
+    # Comparar características comuns
+    for feature in ['type', 'place', 'manner', 'height', 'backness', 'rounded', 'voiced', 'nasal']:
+        if feature in features1 and feature in features2:
+            total += 1
+            if features1[feature] == features2[feature]:
+                score += 1
+
+    # Retornar a proporção de características correspondentes
+    return (score / total) * 2 - 1  # Normalizado entre -1 e 1
+
+
+# Atualizar get_similarity para usar calculate_similarity
+def get_similarity(p1, p2):
+    if p1 == p2:
+        return 1.0
+    else:
+        return calculate_similarity(p1, p2) - 1  # Subtraia 1 para manter a consistência com penalidades
 
 ##--------------------------------------------------------------------------------------------------------------------------------# Processamento de áudio:
 # Processamento de áudio:
@@ -598,8 +694,6 @@ def speak():
     file_path = tempfile.mktemp(suffix=".mp3")
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
-
-
 
 
 
