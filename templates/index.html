@@ -420,13 +420,43 @@
             let pronunciation = window.pronunciations[word];
             if (pronunciation) {
                 document.getElementById('feedbackContent').innerHTML = `
-                    <strong>Mot:</strong> ${escapeHtml(word)}<br>
-                    <strong>Prononciation correcte:</strong> ${escapeHtml(pronunciation.correct)}<br>
-                    <strong>Votre Prononciation:</strong> ${escapeHtml(pronunciation.user || 'N/A')}
-                    <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(word)}')">Écouter la prononciation</button> 
-                `;
+            <strong>Mot:</strong> ${escapeHtml(word)}<br>
+            <strong>Prononciation correct:</strong> ${escapeHtml(pronunciation.correct)}<br>
+            <strong>Votre Prononciation:</strong> ${escapeHtml(pronunciation.user || 'N/A')}
+            <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(word)}')">Écouter la prononciation</button> 
+        `;
+
+                // Corrigindo o atributo onclick (mantendo a correção anterior):
+                const speakButton = document.querySelector('#feedbackContent .btn-speak');
+                speakButton.setAttribute('onclick', `speakWord('${escapeHtml(word)}')`);
             }
         }
+
+        function speakWord(word) {
+            // Decodificar entidades HTML antes de enviar para o TTS
+            const decodedWord = htmlDecode(word);
+
+            fetch('/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'text=' + encodeURIComponent(decodedWord) // Enviar a palavra decodificada
+            })
+                .then(response => response.blob())
+                .then(blob => {
+                    let url = URL.createObjectURL(blob);
+                    let audio = new Audio(url);
+                    audio.play();
+                });
+        }
+
+        // Função para decodificar entidades HTML
+        function htmlDecode(input) {
+            var doc = new DOMParser().parseFromString(input, "text/html");
+            return doc.documentElement.textContent;
+        }
+
 
         function speakText() {
             let text = document.getElementById('text').value;
@@ -460,30 +490,8 @@
                 });
         }
 
-        // Função para decodificar entidades HTML
-        function htmlDecode(input) {
-            var doc = new DOMParser().parseFromString(input, "text/html");
-            return doc.documentElement.textContent;
-        }
 
-        function speakWord(word) {
-            // Decodificar entidades HTML antes de enviar para o TTS
-            const decodedWord = htmlDecode(word);
 
-            fetch('/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'text=' + encodeURIComponent(decodedWord) // Enviar a palavra decodificada
-            })
-                .then(response => response.blob())
-                .then(blob => {
-                    let url = URL.createObjectURL(blob);
-                    let audio = new Audio(url);
-                    audio.play();
-                });
-        }
 
         let mediaRecorder;
         let recordedBlobs;
