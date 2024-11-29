@@ -3,8 +3,6 @@ import torch
 import torchaudio
 sys.setrecursionlimit(10000)
 import unicodedata
-import numpy as np
-from difflib import SequenceMatcher
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from flask import Flask, request, render_template, jsonify, send_file
 import re
@@ -19,10 +17,6 @@ import noisereduce as nr
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import json
-import csv
-import time
-from string import punctuation
-
 # Importar os módulos WordMatching e WordMetrics
 import WordMatching
 import WordMetrics
