@@ -135,63 +135,6 @@ french_to_portuguese_phonemes = {
 }
 
 # Características fonéticas
-phonetic_features = {
-    # Vogais
-    'a':  {'type': 'vowel', 'height': 'open', 'backness': 'front',  'rounded': False, 'nasal': False},
-    'e':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'front',  'rounded': False, 'nasal': False},
-    'i':  {'type': 'vowel', 'height': 'close', 'backness': 'front',  'rounded': False, 'nasal': False},
-    'o':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'back',   'rounded': True,  'nasal': False},
-    'u':  {'type': 'vowel', 'height': 'close', 'backness': 'back',   'rounded': True,  'nasal': False},
-    'ɛ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': False, 'nasal': False},
-    'ɔ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'back',   'rounded': True,  'nasal': False},
-    'ɑ':  {'type': 'vowel', 'height': 'open', 'backness': 'back',   'rounded': False, 'nasal': False},
-    'ø':  {'type': 'vowel', 'height': 'close-mid', 'backness': 'front',  'rounded': True,  'nasal': False},
-    'œ':  {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': True,  'nasal': False},
-    'ə':  {'type': 'vowel', 'height': 'mid', 'backness': 'central', 'rounded': False, 'nasal': False},
-    'y':  {'type': 'vowel', 'height': 'close', 'backness': 'front',  'rounded': True,  'nasal': False},
-    # Vogais nasais
-    'ɛ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': False, 'nasal': True},
-    'ɑ̃': {'type': 'vowel', 'height': 'open', 'backness': 'back',   'rounded': False, 'nasal': True},
-    'ɔ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'back',   'rounded': True,  'nasal': True},
-    'œ̃': {'type': 'vowel', 'height': 'open-mid', 'backness': 'front',  'rounded': True,  'nasal': True},
-    # Semivogais
-    'j':  {'type': 'approximant', 'place': 'palatal', 'voiced': True,  'nasal': False},
-    'w':  {'type': 'approximant', 'place': 'labio-velar', 'voiced': True,  'nasal': False},
-    'ɥ':  {'type': 'approximant', 'place': 'labio-palatal', 'voiced': True,  'nasal': False},
-    # Consoantes
-    'p':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'plosive',           'voiced': False},
-    'b':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'plosive',           'voiced': True},
-    't':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'plosive',           'voiced': False},
-    'd':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'plosive',           'voiced': True},
-    'k':  {'type': 'consonant', 'place': 'velar',        'manner': 'plosive',           'voiced': False},
-    'g':  {'type': 'consonant', 'place': 'velar',        'manner': 'plosive',           'voiced': True},
-    'f':  {'type': 'consonant', 'place': 'labiodental',  'manner': 'fricative',         'voiced': False},
-    'v':  {'type': 'consonant', 'place': 'labiodental',  'manner': 'fricative',         'voiced': True},
-    's':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'fricative',         'voiced': False},
-    'z':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'fricative',         'voiced': True},
-    'ʃ':  {'type': 'consonant', 'place': 'postalveolar', 'manner': 'fricative',         'voiced': False},
-    'ʒ':  {'type': 'consonant', 'place': 'postalveolar', 'manner': 'fricative',         'voiced': True},
-    'ʁ':  {'type': 'consonant', 'place': 'uvular',       'manner': 'fricative',         'voiced': True},
-    'h':  {'type': 'consonant', 'place': 'glottal',      'manner': 'fricative',         'voiced': False},
-    'm':  {'type': 'consonant', 'place': 'bilabial',     'manner': 'nasal',             'voiced': True},
-    'n':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'nasal',             'voiced': True},
-    'ɲ':  {'type': 'consonant', 'place': 'palatal',      'manner': 'nasal',             'voiced': True},
-    'ŋ':  {'type': 'consonant', 'place': 'velar',        'manner': 'nasal',             'voiced': True},
-    'l':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'lateral_approximant', 'voiced': True},
-    'tʃ': {'type': 'consonant', 'place': 'postalveolar', 'manner': 'affricate',         'voiced': False},
-    'dʒ': {'type': 'consonant', 'place': 'postalveolar', 'manner': 'affricate',         'voiced': True},
-    'ç':  {'type': 'consonant', 'place': 'palatal',      'manner': 'fricative',         'voiced': False},
-    # Outros fonemas
-    'x':  {'type': 'consonant', 'place': 'velar',        'manner': 'fricative',         'voiced': False},
-    'ʎ':  {'type': 'consonant', 'place': 'palatal',      'manner': 'lateral_approximant', 'voiced': True},
-    # Fonemas adicionais conforme necessário
-    'ʔ':  {'type': 'consonant', 'place': 'glottal',      'manner': 'plosive',           'voiced': False},
-    'θ':  {'type': 'consonant', 'place': 'dental',       'manner': 'fricative',         'voiced': False},
-    'ð':  {'type': 'consonant', 'place': 'dental',       'manner': 'fricative',         'voiced': True},
-    'w':  {'type': 'approximant', 'place': 'labio-velar', 'voiced': True},
-    'ɾ':  {'type': 'consonant', 'place': 'alveolar',     'manner': 'tap',               'voiced': True},
-    'ʕ':  {'type': 'consonant', 'place': 'pharyngeal',   'manner': 'fricative',         'voiced': True},
-}
 
 # Lista de palavras com 'h' aspirado
 h_aspirate_words = [
