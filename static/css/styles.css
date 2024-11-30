@@ -61,7 +61,23 @@ body {
   min-height: 60px;
   line-height: 1.5;
 }
+select {
+  width: 100%;
+  max-width: 600px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
 
+optgroup {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+option {
+  padding: 4px;
+}
 
 /* Responsividade para telas menores */
 @media (max-width: 767px) {
