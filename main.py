@@ -151,18 +151,27 @@ h_aspirate_words = [
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
     word_normalized = word.lower()
-    try:
-        # Tentar obter a pronúncia do dic.json
-        pronunciation = ipa_dictionary.get(word_normalized)
-        if pronunciation:
-            return pronunciation
-        else:
-            # Se não encontrado, usar Epitran como fallback
-            pronunciation = epi.transliterate(word)
-            return pronunciation
-    except Exception as e:
-        logger.error(f"Erro ao obter pronúncia para '{word}': {e}")
-        return word  # Retorna a palavra original como fallback
+    # Tratar casos especiais para artigos definidos
+    if word_normalized == 'le':
+        return 'luh'
+    elif word_normalized == 'la':
+        return 'lá'
+    elif word_normalized == 'les':
+        return 'lê'
+    else:
+        try:
+            # Tentar obter a pronúncia do dic.json
+            pronunciation = ipa_dictionary.get(word_normalized)
+            if pronunciation:
+                return pronunciation
+            else:
+                # Se não encontrado, usar Epitran como fallback
+                pronunciation = epi.transliterate(word)
+                return pronunciation
+        except Exception as e:
+            logger.error(f"Erro ao obter pronúncia para '{word}': {e}")
+            return word  # Retorna a palavra original como fallback
+
 
 def remove_silent_endings(pronunciation, word):
     # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
@@ -192,7 +201,18 @@ def split_into_phonemes(pronunciation):
     idx = 0
     while idx < len(pronunciation):
         matched = False
-        for phoneme in sorted(french_to_portuguese_phonemes.keys(), key=len, reverse=True):
+        # Lista de fonemas ordenada para priorizar fonemas individuais
+        phoneme_list = [
+            # Fonemas individuais
+            'a', 'e', 'i', 'o', 'u', 'y', 'ɛ', 'ɔ', 'ɑ', 'ø', 'œ', 'ə',
+            'ɛ̃', 'ɑ̃', 'ɔ̃', 'œ̃',
+            'j', 'w', 'ɥ',
+            'b', 'd', 'f', 'g', 'k', 'l', 'm', 'n', 'p', 'ʁ', 's', 't',
+            'v', 'z', 'ʃ', 'ʒ', 'ɲ', 'ŋ', 'ç',
+            # Fonemas compostos (depois)
+            'dʒ', 'tʃ', 'ks', 'sj', 'ʎ', 'ʔ', 'θ', 'ð', 'ɾ', 'ʕ'
+        ]
+        for phoneme in phoneme_list:
             length = len(phoneme)
             if pronunciation[idx:idx+length] == phoneme:
                 phonemes.append(phoneme)
@@ -204,6 +224,7 @@ def split_into_phonemes(pronunciation):
             logger.warning(f"Fonema não mapeado: '{pronunciation[idx]}' na pronúncia '{pronunciation}'")
             idx += 1
     return phonemes
+
 
 def convert_pronunciation_to_portuguese(pronunciation, word_idx, all_pronunciations):
     phonemes = split_into_phonemes(pronunciation)
