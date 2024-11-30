@@ -323,8 +323,17 @@ def normalize_text(text):
     text = re.sub(r"'\s+", "'", text)
     return text.strip()
 
+
+'''
 def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
+'''
+
+def add_punctuation_end(sentence):
+    # Adiciona um ponto final se não houver um já
+    if not sentence.endswith('.'):
+        return sentence + '.'
+    return sentence
 
 # Funções para comparação fonética
 # Funções para comparação fonética
@@ -426,14 +435,14 @@ def get_sentence():
         if category == 'random':
             if random_sentences:
                 sentence = random.choice(random_sentences)
-                sentence_text = remove_punctuation_end(sentence.get('fr_sentence', "Frase não encontrada."))
+                sentence_text = add_punctuation_end(sentence.get('fr_sentence', "Frase não encontrada"))
             else:
                 return jsonify({"error": "Nenhuma frase disponível para seleção aleatória."}), 500
         else:
             if category in categorized_sentences:
                 sentences_in_category = categorized_sentences[category]
                 sentence_text = random.choice(sentences_in_category)
-                sentence_text = remove_punctuation_end(sentence_text)
+                sentence_text = add_punctuation_end(sentence_text)
             else:
                 return jsonify({"error": "Categoria não encontrada."}), 400
 
