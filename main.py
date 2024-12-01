@@ -81,8 +81,8 @@ french_to_portuguese_phonemes = {
     'ɔ': {'default': 'ó'},
     'o': {'default': 'ô'},
     'u': {'default': 'u'},
-    'y': {'default': 'u'},
-    'ø': {'default': 'eu'},
+    'y': {'default': 'i'},
+    'ø': {'default': 'ø'},
     'œ': {'default': 'é'},
     'ə': {'default': 'e'},
 
@@ -90,7 +90,8 @@ french_to_portuguese_phonemes = {
     'ɛ̃': {'default': 'ẽ'},
     'ɑ̃': {'default': 'ã'},
     'ɔ̃': {'default': 'õ'},
-    'œ̃': {'default': 'ũ'},
+    'œ̃': {'default': 'ũn'},
+    'ð': {'default': 'on'},  # Adapte conforme necessário
 
     # Semivogais
     'j': {'default': 'i'},
@@ -129,7 +130,7 @@ french_to_portuguese_phonemes = {
     'ʎ': {'default': 'lh'},
     'ʔ': {'default': ''},  # Fonema glotal stop geralmente não tem equivalente em português
     'θ': {'default': 't'},  # Adapte conforme necessário
-    'ð': {'default': 'd'},  # Adapte conforme necessário
+   
     'ɾ': {'default': 'r'},
     'ʕ': {'default': 'r'},  # Adapte conforme necessário
 }
@@ -151,13 +152,31 @@ h_aspirate_words = [
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
     word_normalized = word.lower()
-    # Tratar casos especiais para artigos definidos
+    # Tratar casos especiais para artigos definidos e pronomes tonicos
     if word_normalized == 'le':
         return 'luh'
     elif word_normalized == 'la':
         return 'lá'
     elif word_normalized == 'les':
         return 'lê'
+    elif word_normalized== 'moi':
+        return 'mwa'
+    elif word_normalized== 'toi':
+        return 'twa'
+    elif word_normalized== 'lui':
+        return 'lui'
+    elif word_normalized== 'elle':
+        return 'él'
+    elif word_normalized== 'nous':
+        return 'nu'
+    elif word_normalized== 'vous':
+        return 'vu'
+    elif word_normalized== 'eux':
+        return 'ø'
+    elif word_normalized== 'elles':
+        return 'él'
+    elif word_normalized=='eux-':
+        return  'ø'
     else:
         try:
             # Tentar obter a pronúncia do dic.json
