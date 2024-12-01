@@ -94,7 +94,7 @@ french_to_portuguese_phonemes = {
     'ð': {'default': 'on'},  # Adapte conforme necessário
 
     # Semivogais
-    'j': {'default': 'i'},
+
     'w': {'default': 'u'},
     'ɥ': {'default': 'u'},
 
@@ -175,8 +175,14 @@ def get_pronunciation(word):
         return 'ø'
     elif word_normalized== 'elles':
         return 'él'
-    elif word_normalized=='eux-':
-        return  'ø'
+    elif word_normalized=='je':
+        return  'jê'
+    elif word_normalized=="j'ai":
+        return 'gé'
+    elif word_normalized=='une':
+        return 'ũne'
+    elif word_normalized=='un':
+        return 'ãn'
     else:
         try:
             # Tentar obter a pronúncia do dic.json
