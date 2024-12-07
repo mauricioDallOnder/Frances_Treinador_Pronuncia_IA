@@ -198,6 +198,89 @@ def remove_silent_endings(pronunciation, word):
     # Adicionar outras regras conforme necessário
     return pronunciation
 
+
+
+
+vogais_orais = ['a', 'e', 'i', 'o', 'u', 'é', 'ê', 'í', 'ó', 'ô', 'ú', 'ø', 'œ', 'ə']
+vogais_nasais = ['ã', 'ẽ', 'ĩ', 'õ', 'ũ']
+semivogais = ['j', 'w', 'ɥ']
+grupos_consonantais_especiais = ['tch', 'dj', 'sj', 'dʒ', 'ks']
+
+# Ajuste essas listas conforme necessário para o seu mapeamento.
+consoantes_base = [
+    'b','d','f','g','k','l','m','n','p','ʁ','r','s','t','v','z','ʃ','ʒ','ɲ','ŋ','ç'
+]
+
+def e_vogal(c):
+    return c in vogais_orais or c in vogais_nasais
+
+def e_semivogal(c):
+    return c in semivogais
+
+def e_consoante(c):
+    return (c in consoantes_base)
+
+def e_grupo_consonantal(seq):
+    return seq in grupos_consonantais_especiais
+
+def tokenizar_palavra(palavra):
+    i = 0
+    tokens = []
+    while i < len(palavra):
+        matched = False
+        for gc in grupos_consonantais_especiais:
+            length = len(gc)
+            if palavra[i:i+length] == gc:
+                tokens.append(gc)
+                i += length
+                matched = True
+                break
+        if not matched:
+            tokens.append(palavra[i])
+            i += 1
+    return tokens
+
+def silabificar_refinado(palavra):
+    # Esta função é um ponto de partida para uma silabificação mais controlada.
+    tokens = tokenizar_palavra(palavra)
+
+    silabas = []
+    silaba_atual = []
+    encontrou_vogal = False
+
+    for t in tokens:
+        if e_vogal(t):
+            if encontrou_vogal and silaba_atual:
+                # Já tinha vogal, fecha a sílaba atual e começa outra
+                silabas.append(''.join(silaba_atual))
+                silaba_atual = [t]
+            else:
+                silaba_atual.append(t)
+                encontrou_vogal = True
+        else:
+            # Consoante ou semivogal
+            silaba_atual.append(t)
+
+    if silaba_atual:
+        silabas.append(''.join(silaba_atual))
+
+    # Aqui você poderia aplicar outras regras, por exemplo,
+    # checar se semivogais devem ficar na sílaba anterior ou seguinte,
+    # ajustar grupos de consoantes, etc.
+
+    return silabas
+
+def unir_silabas_com_pontos(silabas):
+    return '.'.join(silabas)
+
+def ajustar_liaison_manual(palavras_silabificadas):
+    # Exemplo: se quiser tratar "nous allons" para ficar "nu.z a.ló̃z",
+    # você pode detectar essas palavras e ajustar manualmente.
+    # Isso é opcional e depende do nível de controle que você quer.
+    # Por enquanto, deixamos essa função como um simples retorno.
+    return palavras_silabificadas
+
+# Agora ajustamos a função transliterate_and_convert_sentence para usar a nova silabificação
 def transliterate_and_convert_sentence(sentence):
     words = sentence.split()
     # Tratar apóstrofos
@@ -205,14 +288,33 @@ def transliterate_and_convert_sentence(sentence):
     pronunciations = [get_pronunciation(word) for word in words]
     # Aplicar liaisons
     pronunciations = apply_liaisons(words, pronunciations)
-    # Remover terminações silenciosas para cada palavra e pronúncia
+    # Remover terminações silenciosas
     pronunciations = [remove_silent_endings(pron, word) for pron, word in zip(pronunciations, words)]
+    
     # Converter cada pronúncia para português
-    pronunciations_pt = [
+    palavras_convertidas = [
         convert_pronunciation_to_portuguese(pron, idx, pronunciations)
         for idx, pron in enumerate(pronunciations)
     ]
-    return ' '.join(pronunciations_pt)
+
+    # Agora aplicamos a silabificação refinada palavra a palavra.
+    palavras_silabificadas = []
+    for p in palavras_convertidas:
+        silabas = silabificar_refinado(p)
+        palavras_silabificadas.append(unir_silabas_com_pontos(silabas))
+
+    # Aqui você pode chamar a função de ajuste manual se quiser
+    palavras_silabificadas = ajustar_liaison_manual(palavras_silabificadas)
+
+    # Une as palavras resultando na frase final
+    transcricao_final = ' '.join(palavras_silabificadas)
+
+    return transcricao_final
+
+
+
+ 
+  
 
 def split_into_phonemes(pronunciation):
     phonemes = []
