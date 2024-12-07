@@ -81,7 +81,7 @@ french_to_portuguese_phonemes = {
     'ɔ': {'default': 'ó'},
     'o': {'default': 'ô'},
     'u': {'default': 'u'},
-    'y': {'default': 'i'},
+    'y': {'default': 'u'},
     'ø': {'default': 'ø'},
     'œ': {'default': 'é'},
     'ə': {'default': 'e'},
@@ -97,7 +97,6 @@ french_to_portuguese_phonemes = {
 
     'w': {'default': 'u'},
     'ɥ': {'default': 'u'},
-
     # Consoantes
     'b': {'default': 'b'},
     'd': {'default': 'd', 'before_i': 'dj'},
@@ -177,12 +176,6 @@ def get_pronunciation(word):
         return 'él'
     elif word_normalized=='je':
         return  'jê'
-    elif word_normalized=="j'ai":
-        return 'gé'
-    elif word_normalized=='une':
-        return 'ũne'
-    elif word_normalized=='un':
-        return 'ãn'
     else:
         try:
             # Tentar obter a pronúncia do dic.json
@@ -375,11 +368,8 @@ def remove_punctuation_end(sentence):
     return sentence.rstrip('.')
 '''
 
-def add_punctuation_end(sentence):
-    # Adiciona um ponto final se não houver um já
-    if not sentence.endswith('.'):
-        return sentence + '.'
-    return sentence
+def remove_punctuation_end(sentence):
+      return sentence.rstrip('.')
 
 # Funções para comparação fonética
 # Funções para comparação fonética
@@ -481,14 +471,14 @@ def get_sentence():
         if category == 'random':
             if random_sentences:
                 sentence = random.choice(random_sentences)
-                sentence_text = add_punctuation_end(sentence.get('fr_sentence', "Frase não encontrada"))
+                sentence_text = remove_punctuation_end(sentence.get('fr_sentence', "Frase não encontrada"))
             else:
                 return jsonify({"error": "Nenhuma frase disponível para seleção aleatória."}), 500
         else:
             if category in categorized_sentences:
                 sentences_in_category = categorized_sentences[category]
                 sentence_text = random.choice(sentences_in_category)
-                sentence_text = add_punctuation_end(sentence_text)
+                sentence_text = remove_punctuation_end(sentence_text)
             else:
                 return jsonify({"error": "Categoria não encontrada."}), 400
 
