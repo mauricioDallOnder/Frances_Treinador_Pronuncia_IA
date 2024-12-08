@@ -191,63 +191,63 @@ def get_pronunciation_hints(word):
             messages.append(explanation)
 
     apply_pattern(r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  "a sequência destacada indica um som nasal [ã], semelhante ao 'an' em 'canto'.")
+                  " A sequência (am|em|an|en) indica um som nasal [ã], semelhante ao 'an' em 'canto'.")
 
     apply_pattern(r'(in|im|yn|ym|ein|ain|ien|aim)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  "a sequência destacada representa um som nasal [ãn], como um 'ãn' em 'pãnse'.")
+                  " A sequência (in|im|yn|ym|ein|ain|ien|aim) representa um som nasal [ãn], como um 'ãn' em 'pãnse'.")
 
     apply_pattern(r'(on|om)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  "a sequência destacada dá um som nasal [õ], parecido com 'on' em português.")
+                  " A sequência (on/om) dá um som nasal [õ], parecido com 'on' em português.")
     apply_pattern(r'(un|um)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  "a sequência destacada produz um som nasal [œ̃], característico do francês ('un').")
+                  " A sequência (un/um) produz um som nasal [œ̃], característico do francês ('un').")
     apply_pattern(r'(au|aux|eau|eaux)', 
-                  "essa sequência é pronunciada como [ô].")
-
+                  " A sequência (au|aux|eau|eaux) é pronunciada como [ô].")
+    apply_pattern(r'(oy)',
+                  ' "oy" soa como "uai" do mineiro.')
     if re.search(r'e' + consonants + '{2,}', highlighted_word):
-        messages.append('quando "e" é seguido de duas ou mais consoantes, tende a soar mais fechado ([ɛ]), como "é".')
+        messages.append('Quando "e" é seguido de duas ou mais consoantes, tende a soar mais fechado ([ɛ]), como "é".')
 
     apply_pattern(r'(x)(?=' + consonants + ')', 
-                  '"x" seguido de consoante soa como [ks].')
+                  ' "x" seguido de consoante soa como [ks].')
     apply_pattern(r'(y)(?=[' + vowels + '])', 
-                  '"y" antes de vogal tem som de [j].')
+                  ' "y" antes de vogal tem som de [j].')
     apply_pattern(r'(c)(?=[' + front_vowels + '])', 
                   '"c" antes de vogal frontal soa como [s].')
-    apply_pattern(r'(oy)',
-                  '"oy" soa como "uai" do mineiro.')
+    
     apply_pattern(r'(ch)', 
-                  '"ch" soa como [ʃ], parecido com "ch" em "chave".')
+                  ' "ch" soa como [ʃ], parecido com "ch" em "chave".')
     apply_pattern(r'(j|g)(?=[eiy])', 
-                  '"j" e "g" antes de "e", "i" ou "y" soam [ʒ], como "j" em "jogar".')
+                  ' "j" e "g" antes de "e", "i" ou "y" soam [ʒ], como "j" em "jogar".')
     apply_pattern(r'(gn)', 
                   '"gn" soa como [nh], similar a "nh" em português.')
     apply_pattern(r'(e|es)$', 
-                  'No final da palavra, geralmente esse "e/es" não são pronunciados.')
+                  ' No final da palavra, geralmente esse "e/es" não são pronunciados.')
     
-    apply_pattern(r'(oi)', 'a sequência "oi" é pronunciada como [wa].')
+    apply_pattern(r'(oi)', ' A sequência "oi" é pronunciada como [wa].')
 
         # 3. "ou" → [u]
-    apply_pattern(r'(ou)', 'essa sequência "ou" é pronunciada como [u].')
+    apply_pattern(r'(ou)', ' Essa sequência "ou" é pronunciada como [u].')
 
     # 7. "ch" → [ʃ] (sh)
-    apply_pattern(r'(ch)', '"ch" soa como [ʃ], parecido com "sh".')
+    apply_pattern(r'(ch)', ' "ch" soa como [ʃ], parecido com "sh".')
 
     # 8. "ille" → [iê]
-    apply_pattern(r'(ille)', '"ille" é pronunciado como [iê].')
+    apply_pattern(r'(ille)', ' "ille" é pronunciado como [iê].')
 
         # 9. "eu" → [œ]
-    apply_pattern(r'(eu)', '"eu" é pronunciado como [u] fechado.')
+    apply_pattern(r'(eu)', ' "eu" é pronunciado como [u] fechado.')
    
         # 11. "é" → [ê]
-    apply_pattern(r'(é)', '"é" é pronunciado como [ê] fechado')
+    apply_pattern(r'(é)', ' "é" é pronunciado como [ê] fechado')
 
     # 12. "è", "ê", "ai", "ei" → [é]
-    apply_pattern(r'(è|ê|ai|ei)', 'essas combinações são pronunciadas como [é] aberto.')
+    apply_pattern(r'(è|ê|ai|ei)', ' As combinações (è|ê|ai|ei) são pronunciadas como [é] aberto.')
 
     # 13. "er" (final) → [ê]
-    apply_pattern(r'(er)$', 'no final da palavra, "er" é pronunciado como [ê] fechado.')
+    apply_pattern(r'(er)$', ' No final da palavra, "er" é pronunciado como [ê] fechado.')
     
     # 18. "qu" → [k]
-    apply_pattern(r'(qu)', '"qu" é pronunciado como [k].')
+    apply_pattern(r'(qu)', ' "qu" é pronunciado como [k].')
 
 
 
@@ -257,35 +257,35 @@ def get_pronunciation_hints(word):
 
     if re.search(r'(grand|quand)$', highlighted_word):
         highlighted_word = highlight_pattern(highlighted_word, r'(d)$')
-        messages.append('na liaison, o "d" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
+        messages.append('Na liaison, o "d" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
 
     if re.match(r'^j\'ai$', word):
-        messages.append('em "j\'ai regardé", na fala rápida, pode soar "j\'ai r\'gardé", omitindo levemente a vogal intermediária.')
+        messages.append('Em "j\'ai regardé", na fala rápida, pode soar "j\'ai r\'gardé", omitindo levemente a vogal intermediária.')
 
     if word.lower() == 'le':
         if re.search(r'(e)$', highlighted_word):
             highlighted_word = highlight_pattern(highlighted_word, r'(e)$')
-            messages.append('no artigo "le", o "e" é muito curto e neutro, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".')
+            messages.append('No artigo "le", o "e" é muito curto e neutro, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".')
 
     if word.lower() == 'les':
         if re.search(r'(es)$', highlighted_word):
             highlighted_word = highlight_pattern(highlighted_word, r'(es)$')
-            messages.append('no artigo "les", o "es" soa como "lê", diferenciando-se de "le" (lu). Ex: "les chats" → "lê chá".')
+            messages.append('No artigo "les", o "es" soa como "lê", diferenciando-se de "le" (lu). Ex: "les chats" → "lê chá".')
 
     if re.search(r'(chats)$', highlighted_word):
         if re.search(r'(s)$', highlighted_word):
             highlighted_word = highlight_pattern(highlighted_word, r'(s)$')
-            messages.append('em "chats", o "s" final é mudo, então "chats" soa como "chá", igual ao singular. A distinção plural/singular vem do artigo.')
+            messages.append('Em "chats", o "s" final é mudo, então "chats" soa como "chá", igual ao singular. A distinção plural/singular vem do artigo.')
 
     if 'ph' in word:
         if re.search(r'(ph)', highlighted_word):
             highlighted_word = highlight_pattern(highlighted_word, r'(ph)')
-            messages.append('"ph" soa como [f]. Ex: "photo" → "fôto".')
+            messages.append(' "ph" soa como [f]. Ex: "photo" → "fôto".')
 
     if 'th' in word:
         if re.search(r'(th)', highlighted_word):
             highlighted_word = highlight_pattern(highlighted_word, r'(th)')
-            messages.append('"th" costuma ser pronunciado como [t].')
+            messages.append(' "th" costuma ser pronunciado como [t].')
 
     if messages:
         # Aqui envolvemos a palavra final já com todos os destaques em vermelho
