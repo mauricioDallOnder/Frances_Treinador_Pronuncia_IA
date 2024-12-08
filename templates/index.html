@@ -1,592 +1,828 @@
 <!DOCTYPE html>
 <html lang="fr">
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Entraîneur de prononciation IA</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <link rel="stylesheet" href="../static/css/styles.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="../static/css/styles.css" />
+    <script
+      src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"
+      type="text/javascript"
+    ></script>
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <div class="flex-md-row">
-            <div class="main-content">
-                <h1 class="mb-4">Entraîneur de prononciation IA</h1>
+      <div class="flex-md-row">
+        <div class="main-content">
+          <h1 class="mb-4">Entraîneur de prononciation IA</h1>
 
+          <div class="mb-3">
+            <label for="category" class="form-label"
+              >Sélectionnez la catégorie :</label
+            >
+            <select class="form-select" id="category" name="category">
+              <!-- Cuisine et Alimentation -->
+              <optgroup label="Cuisine et Alimentation">
+                <option value="Parler_d_un_plat">Parler d'un plat</option>
+                <option value="Parler_d_une_mode_culinaire">
+                  Parler d'une mode culinaire
+                </option>
+                <option value="Décrire_un_plat">Décrire un plat</option>
+                <option value="Parler_des_modes_de_cuisson_et_préparation">
+                  Parler des modes de cuisson et préparation
+                </option>
+                <option value="Parler_de_ses_habitudes_alimentaires">
+                  Parler de ses habitudes alimentaires
+                </option>
+                <option value="Qualifer_un_plat">Qualifier un plat</option>
+                <option value="Donner_une_opinion">Donner une opinion</option>
+                <option value="Au restaurant - Commander de la nourriture">
+                  Au restaurant - Commander de la nourriture
+                </option>
+              </optgroup>
 
-                <div class="mb-3">
-                    <label for="category" class="form-label">Sélectionnez la catégorie :</label>
-                    <select class="form-select" id="category" name="category">
-                    <!-- Cuisine et Alimentation -->
-        <optgroup label="Cuisine et Alimentation">
-            <option value="Parler_d_un_plat">Parler d'un plat</option>
-            <option value="Parler_d_une_mode_culinaire">Parler d'une mode culinaire</option>
-            <option value="Décrire_un_plat">Décrire un plat</option>
-            <option value="Parler_des_modes_de_cuisson_et_préparation">Parler des modes de cuisson et préparation</option>
-            <option value="Parler_de_ses_habitudes_alimentaires">Parler de ses habitudes alimentaires</option>
-            <option value="Qualifer_un_plat">Qualifier un plat</option>
-            <option value="Donner_une_opinion">Donner une opinion</option>
-            <option value="Au restaurant - Commander de la nourriture">Au restaurant - Commander de la nourriture</option>
-        </optgroup>
+              <!-- Santé et Bien-être -->
+              <optgroup label="Santé et Bien-être">
+                <option value="Donner_un_avis_sur_les_questions_de_sante">
+                  Donner un avis sur les questions de santé
+                </option>
+                <option
+                  value="Expliquer_une_maladie_et_symptomes_chez_le_medecin"
+                >
+                  Expliquer une maladie et ses symptômes chez le médecin
+                </option>
+                <option value="Sur_la_consultation_medicale">
+                  Sur la consultation médicale
+                </option>
+                <option value="Sur_les_maladies_et_les_maux">
+                  Sur les maladies et les maux
+                </option>
+                <option value="Poser_une_question_sur_la_sante_chez_le_medecin">
+                  Poser une question sur la santé chez le médecin
+                </option>
+                <option value="Donner_un_conseil">Donner un conseil</option>
+                <option value="Donner_un_conseil_sur_le_sport">
+                  Donner un conseil sur le sport
+                </option>
+                <option value="Parler_de_un_malade">Parler de un malade</option>
+              </optgroup>
 
-        <!-- Santé et Bien-être -->
-        <optgroup label="Santé et Bien-être">
-            <option value="Donner_un_avis_sur_les_questions_de_sante">Donner un avis sur les questions de santé</option>
-            <option value="Expliquer_une_maladie_et_symptomes_chez_le_medecin">Expliquer une maladie et ses symptômes chez le médecin</option>
-            <option value="Sur_la_consultation_medicale">Sur la consultation médicale</option>
-            <option value="Sur_les_maladies_et_les_maux">Sur les maladies et les maux</option>
-            <option value="Poser_une_question_sur_la_sante_chez_le_medecin">Poser une question sur la santé chez le médecin</option>
-            <option value="Donner_un_conseil">Donner un conseil</option>
-            <option value="Donner_un_conseil_sur_le_sport">Donner un conseil sur le sport</option>
-            <option value="Parler_de_un_malade">Parler de un malade</option>
-        </optgroup>
+              <!-- Logement -->
+              <optgroup label="Logement">
+                <option value="À la recherche d'un appartement à louer">
+                  À la recherche d'un appartement à louer
+                </option>
+                <option value="Qualifier_un_logement">
+                  Qualifier un logement
+                </option>
+                <option value="Indiquer_un_loyer">Indiquer un loyer</option>
+              </optgroup>
 
-        <!-- Logement -->
-        <optgroup label="Logement">
-            <option value="À la recherche d'un appartement à louer">À la recherche d'un appartement à louer</option>
-            <option value="Qualifier_un_logement">Qualifier un logement</option>
-            <option value="Indiquer_un_loyer">Indiquer un loyer</option>
-        </optgroup>
+              <!-- Éducation et Formation -->
+              <optgroup label="Éducation et Formation">
+                <option value="Présenter_ses_études_et_sa_formation">
+                  Présenter ses études et sa formation
+                </option>
+                <option value="Parler_de_ses_experiences_d_eleve">
+                  Parler de ses expériences d'élève
+                </option>
+                <option
+                  value="Parler_des_nouvelles_façons_de_se_former_et_d_apprendre"
+                >
+                  Parler des nouvelles façons de se former et d'apprendre
+                </option>
+                <option value="Parler_de_sa_parcours_scolaire_et_professionnel">
+                  Parler de son parcours scolaire et professionnel
+                </option>
+              </optgroup>
 
-        <!-- Éducation et Formation -->
-        <optgroup label="Éducation et Formation">
-            <option value="Présenter_ses_études_et_sa_formation">Présenter ses études et sa formation</option>
-            <option value="Parler_de_ses_experiences_d_eleve">Parler de ses expériences d'élève</option>
-            <option value="Parler_des_nouvelles_façons_de_se_former_et_d_apprendre">Parler des nouvelles façons de se former et d'apprendre</option>
-            <option value="Parler_de_sa_parcours_scolaire_et_professionnel">Parler de son parcours scolaire et professionnel</option>
-        </optgroup>
+              <!-- Travail et Carrière -->
+              <optgroup label="Travail et Carrière">
+                <option value="entretien d'embauche">
+                  Entretien d'embauche
+                </option>
+                <option
+                  value="Échanger_sur_des_initiatives_originales_au_travail"
+                >
+                  Échanger sur des initiatives originales au travail
+                </option>
+                <option value="Parler_de_sa_relation_au_travail">
+                  Parler de sa relation au travail
+                </option>
+                <option value="Parler_des_nouveaux_métiers_et_entreprises">
+                  Parler des nouveaux métiers et entreprises
+                </option>
+                <option value="Préparer_un_entretien_d_embauche">
+                  Préparer un entretien d'embauche
+                </option>
+                <option value="Rapporter_des_propos_et_des_questions">
+                  Rapporter des propos et des questions
+                </option>
+              </optgroup>
 
-        <!-- Travail et Carrière -->
-        <optgroup label="Travail et Carrière">
-            <option value="entretien d'embauche">Entretien d'embauche</option>
-            <option value="Échanger_sur_des_initiatives_originales_au_travail">Échanger sur des initiatives originales au travail</option>
-            <option value="Parler_de_sa_relation_au_travail">Parler de sa relation au travail</option>
-            <option value="Parler_des_nouveaux_métiers_et_entreprises">Parler des nouveaux métiers et entreprises</option>
-            <option value="Préparer_un_entretien_d_embauche">Préparer un entretien d'embauche</option>
-            <option value="Rapporter_des_propos_et_des_questions">Rapporter des propos et des questions</option>
-        </optgroup>
+              <!-- Voyage -->
+              <optgroup label="Voyage">
+                <option value="Partager_ses_raisons_de_voyager">
+                  Partager ses raisons de voyager
+                </option>
+                <option value="Parler_de_ses_vacances">
+                  Parler de ses vacances
+                </option>
+                <option value="Présenter_des_données_chiffrées">
+                  Présenter des données chiffrées
+                </option>
+                <option value="Parler_de_la_préparation_d_un_voyage">
+                  Parler de la préparation d'un voyage
+                </option>
+                <option value="Décrire_un_paysage">Décrire un paysage</option>
+                <option value="Raconter_un_voyage">Raconter un voyage</option>
+              </optgroup>
 
-        <!-- Voyage -->
-        <optgroup label="Voyage">
-            <option value="Partager_ses_raisons_de_voyager">Partager ses raisons de voyager</option>
-            <option value="Parler_de_ses_vacances">Parler de ses vacances</option>
-            <option value="Présenter_des_données_chiffrées">Présenter des données chiffrées</option>
-            <option value="Parler_de_la_préparation_d_un_voyage">Parler de la préparation d'un voyage</option>
-            <option value="Décrire_un_paysage">Décrire un paysage</option>
-            <option value="Raconter_un_voyage">Raconter un voyage</option>
-        </optgroup>
+              <!-- Loisirs et Sports -->
+              <optgroup label="Loisirs et Sports">
+                <option value="Parler_des_loisirs">Parler des loisirs</option>
+                <option value="parler_de_sa_pratique_sportive">
+                  Parler de sa pratique sportive
+                </option>
+                <option value="recommander_un_sport">
+                  Recommander un sport
+                </option>
+              </optgroup>
 
-         <!-- Loisirs et Sports -->
-         <optgroup label="Loisirs et Sports">
-            <option value="Parler_des_loisirs">Parler des loisirs</option>
-            <option value="parler_de_sa_pratique_sportive">Parler de sa pratique sportive</option>
-            <option value="recommander_un_sport">Recommander un sport</option>
-        </optgroup>
+              <!-- Communication et Interaction Sociale -->
+              <optgroup label="Communication et Interaction Sociale">
+                <option value="Se_decrire_et_decrire_ses_amis">
+                  Se décrire et décrire ses amis
+                </option>
+                <option value="Inviter_quelqu_un_ou_faire_une_proposition">
+                  Inviter quelqu'un ou faire une proposition
+                </option>
+                <option value="Accepter_ou_refuser_une_invitation">
+                  Accepter ou refuser une invitation
+                </option>
+              </optgroup>
 
-        <!-- Communication et Interaction Sociale -->
-        <optgroup label="Communication et Interaction Sociale">
-            <option value="Se_decrire_et_decrire_ses_amis">Se décrire et décrire ses amis</option>
-            <option value="Inviter_quelqu_un_ou_faire_une_proposition">Inviter quelqu'un ou faire une proposition</option>
-            <option value="Accepter_ou_refuser_une_invitation">Accepter ou refuser une invitation</option>
-        </optgroup>
+              <!-- Phonétique -->
+              <optgroup label="Phonétique">
+                <option value="Combinaisons_spécifiques_et_leurs_bruits_nasaux">
+                  Combinaisons spécifiques et leurs bruits nasaux
+                </option>
+                <option
+                  value="Combinaisons_de_voyelles_qui_créent_des_sons_nasaux"
+                >
+                  Combinaisons de voyelles qui créent des sons nasaux
+                </option>
+                <option value="Cas_courants_et_pièges">
+                  Cas courants et pièges
+                </option>
+                <option
+                  value="Accents_et_comment_ils_affectent_la_prononciation"
+                >
+                  Accents et comment ils affectent la prononciation
+                </option>
+                <option value="Diphtongues_et_sons_complexes">
+                  Diphtongues et sons complexes
+                </option>
+                <option value="Le_son_de_R">Le son de R</option>
+                <option value="Consonnes_doublées">Consonnes doublées</option>
+                <option value="Liaison">Liaison</option>
+                <option value="Voyelles_et_diphtongues">
+                  Voyelles et diphtongues
+                </option>
+                <option value="Le_E_muet">Le E muet</option>
+                <option value="Sons_nasaux">Sons nasaux</option>
+                <option value="Les_lettres_muettes">Les lettres muettes</option>
+              </optgroup>
 
-        <!-- Phonétique -->
-        <optgroup label="Phonétique">
-            <option value="Combinaisons_spécifiques_et_leurs_bruits_nasaux">Combinaisons spécifiques et leurs bruits nasaux</option>
-            <option value="Combinaisons_de_voyelles_qui_créent_des_sons_nasaux">Combinaisons de voyelles qui créent des sons nasaux</option>
-            <option value="Cas_courants_et_pièges">Cas courants et pièges</option>
-            <option value="Accents_et_comment_ils_affectent_la_prononciation">Accents et comment ils affectent la prononciation</option>
-            <option value="Diphtongues_et_sons_complexes">Diphtongues et sons complexes</option>
-            <option value="Le_son_de_R">Le son de R</option>
-            <option value="Consonnes_doublées">Consonnes doublées</option>
-            <option value="Liaison">Liaison</option>
-            <option value="Voyelles_et_diphtongues">Voyelles et diphtongues</option>
-            <option value="Le_E_muet">Le E muet</option>
-            <option value="Sons_nasaux">Sons nasaux</option>
-            <option value="Les_lettres_muettes">Les lettres muettes</option>
-        </optgroup>
+              <!-- Grammaire -->
+              <optgroup label="Grammaire">
+                <option value="Expressions_en_Conditionnel_Present">
+                  Expressions en Conditionnel Présent
+                </option>
+                <option value="Expressions_en_Imperatif">
+                  Expressions en Impératif
+                </option>
+                <option value="Expressions_en_Futur_Simple">
+                  Expressions en Futur Simple
+                </option>
+                <option value="Expressions_en_Passe_Compose">
+                  Expressions en Passé Composé
+                </option>
+                <option value="Expressions_en_Present_Continu_Gerondif">
+                  Expressions en Présent Continu / Gérondif
+                </option>
+                <option value="Expressions_en_Passe_Recent">
+                  Expressions en Passé Récent
+                </option>
+                <option value="Expressions_en_Imparfait">
+                  Expressions en Imparfait
+                </option>
+                <option value="Expressions_en_Plus_Que_Parfait">
+                  Expressions en Plus-Que-Parfait
+                </option>
+                <option value="Expressions_en_Futur_Proche">
+                  Expressions en Futur Proche
+                </option>
+                <option value="Phrases_avec_de">Phrases avec "de"</option>
+                <option value="Phrases_avec_a">Phrases avec "à"</option>
+                <option value="Phrases_avec_en">Phrases avec "en"</option>
+                <option value="Phrases_avec_COI">Phrases avec COI</option>
+                <option value="Phrases_avec_COD">Phrases avec COD</option>
+                <option value="Connecteurs">Connecteurs</option>
+                <option value="Conjugaison3">Conjugaison 3</option>
+                <option value="Conjugaison2">Conjugaison 2</option>
+                <option value="Pronominaux">Pronominaux</option>
+                <option value="Phrases_avec_y">Phrases avec "y"</option>
+              </optgroup>
 
-        <!-- Grammaire -->
-        <optgroup label="Grammaire">
-            <option value="Expressions_en_Conditionnel_Present">Expressions en Conditionnel Présent</option>
-            <option value="Expressions_en_Imperatif">Expressions en Impératif</option>
-            <option value="Expressions_en_Futur_Simple">Expressions en Futur Simple</option>
-            <option value="Expressions_en_Passe_Compose">Expressions en Passé Composé</option>
-            <option value="Expressions_en_Present_Continu_Gerondif">Expressions en Présent Continu / Gérondif</option>
-            <option value="Expressions_en_Passe_Recent">Expressions en Passé Récent</option>
-            <option value="Expressions_en_Imparfait">Expressions en Imparfait</option>
-            <option value="Expressions_en_Plus_Que_Parfait">Expressions en Plus-Que-Parfait</option>
-            <option value="Expressions_en_Futur_Proche">Expressions en Futur Proche</option>
-            <option value="Phrases_avec_de">Phrases avec "de"</option>
-            <option value="Phrases_avec_a">Phrases avec "à"</option>
-            <option value="Phrases_avec_en">Phrases avec "en"</option>
-            <option value="Phrases_avec_COI">Phrases avec COI</option>
-            <option value="Phrases_avec_COD">Phrases avec COD</option>
-            <option value="Connecteurs">Connecteurs</option>
-            <option value="Conjugaison3">Conjugaison 3</option>
-            <option value="Conjugaison2">Conjugaison 2</option>
-            <option value="Pronominaux">Pronominaux</option>
-            <option value="Phrases_avec_y">Phrases avec "y"</option>
-        </optgroup>
+              <!-- Autres -->
+              <optgroup label="Autres">
+                <option value="Donner_la_date">Donner la date</option>
+                <option value="Donner_l_heure">Donner l'heure</option>
+                <option value="Indiquer_la_frequence">
+                  Indiquer la fréquence
+                </option>
+                <option value="Exprimer_une_condition">
+                  Exprimer_une_condition
+                </option>
+                <option value="Donner_un_conseil">Donner_un_conseil</option>
+                <option value="Exprimer_la_condition">
+                  Exprimer_la_condition
+                </option>
+                <option value="Exprimer_un_souhait">Exprimer_un_souhait</option>
+                <option value="Exprimer_ses_emotions_et_ses_sentiments">
+                  Exprimer_ses_emotions_et_ses_sentiments
+                </option>
+                <option value="Situer_dans_le_temps_et_exprimer_la_duree">
+                  Situer dans le temps et exprimer la durée
+                </option>
+                <option value="Parler_d_Internet_et_des_reseaux_sociaux">
+                  Parler d'Internet et des réseaux sociaux
+                </option>
+              </optgroup>
+            </select>
+          </div>
 
-       
+          <div class="mb-3">
+            <label for="text" class="form-label"
+              >Écrivez ou générez un texte ci-dessous :</label
+            >
+            <textarea class="form-control" id="text" name="text"></textarea>
+          </div>
 
-        <!-- Autres -->
-        <optgroup label="Autres">
-            <option value="Donner_la_date">Donner la date</option>
-            <option value="Donner_l_heure">Donner l'heure</option>
-            <option value="Indiquer_la_frequence">Indiquer la fréquence</option>
-            <option value="Exprimer_une_condition">Exprimer_une_condition</option>
-            <option value="Donner_un_conseil">Donner_un_conseil</option>
-            <option value="Exprimer_la_condition">Exprimer_la_condition</option>
-            <option value="Exprimer_un_souhait">Exprimer_un_souhait</option>
-            <option value="Exprimer_ses_emotions_et_ses_sentiments">Exprimer_ses_emotions_et_ses_sentiments</option>
-            <option value="Situer_dans_le_temps_et_exprimer_la_duree">Situer dans le temps et exprimer la durée</option>
-            <option value="Parler_d_Internet_et_des_reseaux_sociaux">Parler d'Internet et des réseaux sociaux</option>
-        </optgroup>
+          <div class="classButton">
+            <p
+              id="statusMessage"
+              style="
+                display: none;
+                font-weight: bold;
+                color: red;
+                text-align: center;
+                font-size: 12px;
+              "
+            ></p>
+            <button
+              class="btn btn-success"
+              id="generateButton"
+              onclick="generateSentence()"
+            >
+              Générer une phrase
+            </button>
+            <button
+              class="btn btn-danger"
+              id="recordButton"
+              onclick="toggleRecording()"
+            >
+              <span
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                Parler
+                <i class="material-icons" id="recordIcon">mic</i>
+              </span>
+            </button>
+            <button
+              class="btn btn-primary"
+              id="speakButton"
+              onclick="speakText()"
+            >
+              Écouter le texte
+            </button>
+          </div>
 
-                    </select>
-                </div>
+          <div class="pronunciation-feedback mt-4">
+            <h3 class="form-label">Prononciation:</h3>
+            <h3 id="pronunciation"></h3>
+          </div>
 
-                <div class="mb-3">
-                    <label for="text" class="form-label">Écrivez ou générez un texte ci-dessous :</label>
-                    <textarea class="form-control" id="text" name="text"></textarea>
-                </div>
+          <div id="hintsContainer" class="mt-3">
+            <h4>Dicas de pronúnciation:</h4>
+            <ul id="hintsList"></ul>
+          </div>
 
-                <div class="classButton">
-                    <p id="statusMessage"
-                        style="display: none; font-weight: bold; color: red;text-align: center; font-size: 12px;"></p>
-                    <button class="btn btn-success" id="generateButton" onclick="generateSentence()">Générer une
-                        phrase</button>
-                    <button class="btn btn-danger" id="recordButton" onclick="toggleRecording()">
-                        <span style="display: flex;align-items: center; justify-content: center;">
-                            Parler
-                            <i class="material-icons" id="recordIcon">mic</i>
-                        </span>
-                    </button>
-                    <button class="btn btn-primary" id="speakButton" onclick="speakText()">Écouter le texte</button>
-                </div>
+          <!-- Elemento para exibir as mensagens de status -->
+          <div
+            class="uploading-message mt-3"
+            id="uploadingMessage"
+            style="display: none"
+          >
+            <span id="uploadingText">Envoi audio... Attendre.</span>
+            <progress
+              id="uploadProgress"
+              value="0"
+              max="100"
+              style="width: 100%"
+            ></progress>
+          </div>
 
-                <div class="pronunciation-feedback mt-4">
-                    <h3 class="form-label">Prononciation:</h3>
-                    <h3 id="pronunciation"></h3>
-                </div>
-
-                <!-- Elemento para exibir as mensagens de status -->
-                <div class="uploading-message mt-3" id="uploadingMessage" style="display: none;">
-                    <span id="uploadingText">Envoi audio... Attendre.</span>
-                    <progress id="uploadProgress" value="0" max="100" style="width: 100%;"></progress>
-                </div>
-
-                <div class="result mt-4">
-                    <h3>Feedback:</h3>
-                    <p>Taux de réussite en prononciation: <span id="ratio"></span>%</p>
-                    <div class="diff" id="diff"></div>
-                    <br />
-                    <p>Taux d’achèvement: <span id="completeness"></span>%</p>
-                </div>
-                <div id="audioContainer" class="mt-4"></div>
-            </div>
-            <div class="feedback-box" id="feedbackBox">
-                <p id="feedbackContent">Cliquez sur un mot pour voir sa prononciation.</p>
-            </div>
+          <div class="result mt-4">
+            <h3>Feedback:</h3>
+            <p>Taux de réussite en prononciation: <span id="ratio"></span>%</p>
+            <div class="diff" id="diff"></div>
+            <br />
+            <p>Taux d’achèvement: <span id="completeness"></span>%</p>
+          </div>
+          <div id="audioContainer" class="mt-4"></div>
         </div>
+        <div class="feedback-box" id="feedbackBox">
+          <p id="feedbackContent">
+            Cliquez sur un mot pour voir sa prononciation.
+          </p>
+        </div>
+      </div>
     </div>
 
     <script>
-        // Função para escapar caracteres HTML
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+      // Função para escapar caracteres HTML
+      function escapeHtml(unsafe) {
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const categorySelect = document.getElementById('category');
-            const options = categorySelect.options;
-            const randomIndex = Math.floor(Math.random() * options.length);
+      document.addEventListener("DOMContentLoaded", function () {
+        const categorySelect = document.getElementById("category");
+        const options = categorySelect.options;
+        const randomIndex = Math.floor(Math.random() * options.length);
 
-            // Define uma opção aleatória
-            categorySelect.selectedIndex = randomIndex;
-        });
+        // Define uma opção aleatória
+        categorySelect.selectedIndex = randomIndex;
+      });
 
-        // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
-        function disableButtons() {
-            document.getElementById('speakButton').disabled = true;
-            document.getElementById('generateButton').disabled = true;
-            document.getElementById('recordButton').disabled = true;
-        }
+      // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
+      function disableButtons() {
+        document.getElementById("speakButton").disabled = true;
+        document.getElementById("generateButton").disabled = true;
+        document.getElementById("recordButton").disabled = true;
+      }
 
-        function enableButtons() {
-            document.getElementById('speakButton').disabled = false;
-            document.getElementById('generateButton').disabled = false;
-            document.getElementById('recordButton').disabled = false;
-        }
+      function enableButtons() {
+        document.getElementById("speakButton").disabled = false;
+        document.getElementById("generateButton").disabled = false;
+        document.getElementById("recordButton").disabled = false;
+      }
 
-        function showMessage(message) {
-            let statusMessage = document.getElementById('statusMessage');
-            statusMessage.innerText = message;
-            statusMessage.style.display = 'block';
-        }
+      function showMessage(message) {
+        let statusMessage = document.getElementById("statusMessage");
+        statusMessage.innerText = message;
+        statusMessage.style.display = "block";
+      }
 
-        function hideMessage() {
-            let statusMessage = document.getElementById('statusMessage');
-            statusMessage.style.display = 'none';
-        }
+      function hideMessage() {
+        let statusMessage = document.getElementById("statusMessage");
+        statusMessage.style.display = "none";
+      }
 
-        document.getElementById('text').addEventListener('input', function () {
-            fetchPronunciation(this.value);
-        });
+      document.getElementById("text").addEventListener("input", function () {
+        fetchPronunciation(this.value);
+      });
 
-        function fetchPronunciation(text) {
-            fetch('/pronounce', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'text=' + encodeURIComponent(text)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Ajuste: Dividir por espaço em vez de ' || '
-                    const pronunciationHtml = data.pronunciations.split(' ').map(word => `<span class="word">${word}</span>`).join(' ');
-                    document.getElementById('pronunciation').innerHTML = pronunciationHtml;
-                });
-        }
+      function fetchPronunciation(text) {
+        fetch("/pronounce", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "text=" + encodeURIComponent(text),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const pronunciationHtml = data.pronunciations
+              .split(" ")
+              .map((word) => `<span class="word">${word}</span>`)
+              .join(" ");
+            document.getElementById("pronunciation").innerHTML =
+              pronunciationHtml;
 
-        function uploadAudio() {
-            let audioInput = document.getElementById('audio');
-            let textInput = document.getElementById('text');
-            let formData = new FormData();
-            formData.append('audio', audioInput.files[0]);
-            formData.append('text', textInput.value);
+            // Após mostrar a pronúncia, buscar dicas
+            fetch("/hints", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+  },
+  body: "text=" + encodeURIComponent(text),
+})
+.then((response) => response.json())
+.then((hintsData) => {
+  const hintsList = document.getElementById("hintsList");
+  hintsList.innerHTML = ""; // Limpa dicas anteriores
 
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('ratio').innerText = data.ratio;
-                    document.getElementById('completeness').innerText = data.completeness_score;
-                    document.getElementById('diff').innerHTML = data.diff_html;
-                    window.pronunciations = data.pronunciations;
-                });
-        }
+  const hints = hintsData.hints || {};
+  const words = Object.keys(hints);
 
-        function showPronunciation(word) {
-            let pronunciation = window.pronunciations[word];
-            if (pronunciation) {
-                document.getElementById('feedbackContent').innerHTML = `
+  if (words.length > 0) {
+    words.forEach((word) => {
+      const wordData = hints[word]; 
+      const final_messages = wordData.messages.join(' '); 
+
+      // Cria a <li> para colocar a mensagem final
+      const li = document.createElement("li");
+      // final_messages já contém "palavra_destacada: mensagens..."
+      li.innerHTML = final_messages;
+
+      hintsList.appendChild(li);
+    });
+  } else {
+    hintsList.innerHTML = "<li>Aucune suggestion de prononciation supplémentaire.</li>";
+  }
+
+              });
+          });
+      }
+
+      function uploadAudio() {
+        let audioInput = document.getElementById("audio");
+        let textInput = document.getElementById("text");
+        let formData = new FormData();
+        formData.append("audio", audioInput.files[0]);
+        formData.append("text", textInput.value);
+
+        fetch("/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("ratio").innerText = data.ratio;
+            document.getElementById("completeness").innerText =
+              data.completeness_score;
+            document.getElementById("diff").innerHTML = data.diff_html;
+            window.pronunciations = data.pronunciations;
+          });
+      }
+
+      function showPronunciation(word) {
+        let pronunciation = window.pronunciations[word];
+        if (pronunciation) {
+          document.getElementById("feedbackContent").innerHTML = `
             <strong>Mot:</strong> ${escapeHtml(word)}<br>
-            <strong>Prononciation correct:</strong> ${escapeHtml(pronunciation.correct)}<br>
-            <strong>Votre Prononciation:</strong> ${escapeHtml(pronunciation.user || 'N/A')}
-            <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(word)}')">Écouter la prononciation</button> 
+            <strong>Prononciation correct:</strong> ${escapeHtml(
+              pronunciation.correct
+            )}<br>
+            <strong>Votre Prononciation:</strong> ${escapeHtml(
+              pronunciation.user || "N/A"
+            )}
+            <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(
+              word
+            )}')">Écouter la prononciation</button> 
         `;
 
-                // Corrigindo o atributo onclick (mantendo a correção anterior):
-                const speakButton = document.querySelector('#feedbackContent .btn-speak');
-                speakButton.setAttribute('onclick', `speakWord('${escapeHtml(word)}')`);
-            }
+          // Corrigindo o atributo onclick (mantendo a correção anterior):
+          const speakButton = document.querySelector(
+            "#feedbackContent .btn-speak"
+          );
+          speakButton.setAttribute(
+            "onclick",
+            `speakWord('${escapeHtml(word)}')`
+          );
         }
+      }
 
-        function speakWord(word) {
-            // Decodificar entidades HTML antes de enviar para o TTS
-            const decodedWord = htmlDecode(word);
+      function speakWord(word) {
+        // Decodificar entidades HTML antes de enviar para o TTS
+        const decodedWord = htmlDecode(word);
 
-            fetch('/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'text=' + encodeURIComponent(decodedWord) // Enviar a palavra decodificada
-            })
-                .then(response => response.blob())
-                .then(blob => {
-                    let url = URL.createObjectURL(blob);
-                    let audio = new Audio(url);
-                    audio.play();
-                });
+        fetch("/speak", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "text=" + encodeURIComponent(decodedWord), // Enviar a palavra decodificada
+        })
+          .then((response) => response.blob())
+          .then((blob) => {
+            let url = URL.createObjectURL(blob);
+            let audio = new Audio(url);
+            audio.play();
+          });
+      }
+
+      // Função para decodificar entidades HTML
+      function htmlDecode(input) {
+        var doc = new DOMParser().parseFromString(input, "text/html");
+        return doc.documentElement.textContent;
+      }
+
+      function speakText() {
+        let text = document.getElementById("text").value;
+        disableButtons();
+        showMessage("Lecture du texte en cours...");
+
+        fetch("/speak", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "text=" + encodeURIComponent(text),
+        })
+          .then((response) => response.blob())
+          .then((blob) => {
+            let url = URL.createObjectURL(blob);
+            let audio = new Audio(url);
+            audio.play();
+
+            // Reabilitar os botões quando o áudio terminar de tocar
+            audio.onended = function () {
+              enableButtons();
+              hideMessage();
+            };
+          })
+          .catch((error) => {
+            console.error("Erreur:", error);
+            alert("Une erreur est survenue lors de la lecture du texte.");
+            enableButtons();
+            hideMessage();
+          });
+      }
+
+      let mediaRecorder;
+      let recordedBlobs;
+      let isRecording = false;
+
+      function toggleRecording() {
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
         }
+      }
 
-        // Função para decodificar entidades HTML
-        function htmlDecode(input) {
-            var doc = new DOMParser().parseFromString(input, "text/html");
-            return doc.documentElement.textContent;
-        }
-
-
-        function speakText() {
-            let text = document.getElementById('text').value;
-            disableButtons();
-            showMessage('Lecture du texte en cours...');
-
-            fetch('/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'text=' + encodeURIComponent(text)
-            })
-                .then(response => response.blob())
-                .then(blob => {
-                    let url = URL.createObjectURL(blob);
-                    let audio = new Audio(url);
-                    audio.play();
-
-                    // Reabilitar os botões quando o áudio terminar de tocar
-                    audio.onended = function () {
-                        enableButtons();
-                        hideMessage();
-                    };
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la lecture du texte.');
-                    enableButtons();
-                    hideMessage();
-                });
-        }
-
-
-
-
-        let mediaRecorder;
-        let recordedBlobs;
-        let isRecording = false;
-
-        function toggleRecording() {
-            if (isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-            }
-        }
-
-        function startRecording() {
-            recordedBlobs = [];
-            let options = { mimeType: 'audio/webm' };
+      function startRecording() {
+        recordedBlobs = [];
+        let options = { mimeType: "audio/webm" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: "audio/webm;codecs=opus" };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: "audio/ogg;codecs=opus" };
             if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options = { mimeType: 'audio/webm;codecs=opus' };
-                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                    options = { mimeType: 'audio/ogg;codecs=opus' };
-                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                        options = { mimeType: '' };
-                    }
-                }
+              options = { mimeType: "" };
             }
+          }
+        }
 
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                mediaRecorder = new MediaRecorder(stream, options);
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            mediaRecorder = new MediaRecorder(stream, options);
 
-                mediaRecorder.onstop = (event) => {
-                    const blob = new Blob(recordedBlobs, { type: 'audio/webm' });
-                    const url = window.URL.createObjectURL(blob);
-                    const audioContainer = document.getElementById('audioContainer');
-                    audioContainer.innerHTML = '';
-                    const audio = document.createElement('audio');
-                    audio.controls = true;
-                    audio.src = url;
-                    audioContainer.appendChild(audio);
-                    uploadRecording(blob);
-                };
+            mediaRecorder.onstop = (event) => {
+              const blob = new Blob(recordedBlobs, { type: "audio/webm" });
+              const url = window.URL.createObjectURL(blob);
+              const audioContainer = document.getElementById("audioContainer");
+              audioContainer.innerHTML = "";
+              const audio = document.createElement("audio");
+              audio.controls = true;
+              audio.src = url;
+              audioContainer.appendChild(audio);
+              uploadRecording(blob);
+            };
 
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data && event.data.size > 0) {
-                        recordedBlobs.push(event.data);
-                    }
-                };
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data && event.data.size > 0) {
+                recordedBlobs.push(event.data);
+              }
+            };
 
-                mediaRecorder.start();
-                document.getElementById('recordButton').classList.add('recording');
-                document.getElementById('recordIcon').innerText = 'pause';
-                isRecording = true;
-            }).catch(error => {
-                console.error('Erreur lors de l\'accès au microphone:', error);
-                alert('Erreur lors de l\'accès au microphone. Veuillez vérifier les permissions.');
+            mediaRecorder.start();
+            document.getElementById("recordButton").classList.add("recording");
+            document.getElementById("recordIcon").innerText = "pause";
+            isRecording = true;
+          })
+          .catch((error) => {
+            console.error("Erreur lors de l'accès au microphone:", error);
+            alert(
+              "Erreur lors de l'accès au microphone. Veuillez vérifier les permissions."
+            );
+          });
+      }
+
+      function stopRecording() {
+        mediaRecorder.stop();
+        document.getElementById("recordButton").classList.remove("recording");
+        document.getElementById("recordIcon").innerText = "mic";
+        isRecording = false;
+      }
+
+      function uploadRecording(blob) {
+        document.getElementById("uploadingMessage").style.display = "block";
+        document.getElementById("recordButton").disabled = true;
+
+        convertToWav(blob)
+          .then((wavBlob) => {
+            let textInput = document.getElementById("text");
+            let formData = new FormData();
+            formData.append("audio", wavBlob, "recording.wav");
+            formData.append("text", textInput.value);
+            formData.append("category", textInput.dataset.category || "random"); // Inclui a categoria
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/upload", true);
+
+            xhr.upload.addEventListener("progress", function (e) {
+              if (e.lengthComputable) {
+                let percentComplete = (e.loaded / e.total) * 100;
+                document.getElementById("uploadProgress").value =
+                  percentComplete;
+                document.getElementById(
+                  "uploadingText"
+                ).innerText = `Envoi de l’audio... ${Math.round(
+                  percentComplete
+                )}% terminé.`;
+              }
             });
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                let data = JSON.parse(xhr.responseText);
+                document.getElementById("ratio").innerText = data.ratio;
+                document.getElementById("completeness").innerText =
+                  data.completeness_score;
+                document.getElementById("diff").innerHTML = data.diff_html;
+                window.pronunciations = data.pronunciations;
+                document.getElementById("uploadingMessage").style.display =
+                  "none";
+                document.getElementById("recordButton").disabled = false;
+              } else {
+                handleUploadError(xhr);
+              }
+            };
+
+            xhr.onerror = function () {
+              handleUploadError(xhr);
+            };
+
+            xhr.send(formData);
+          })
+          .catch((error) => {
+            document.getElementById("uploadingMessage").style.display = "none";
+            document.getElementById("recordButton").disabled = false;
+            alert("Erro ao enviar o áudio. Por favor, tente novamente.");
+          });
+      }
+
+      function handleUploadError(xhr) {
+        console.error("Erro no envio do áudio:", xhr);
+        document.getElementById("uploadingText").innerText =
+          "Erro no envio do áudio. Tente novamente.";
+        document.getElementById("uploadingMessage").style.display = "none";
+        document.getElementById("recordButton").disabled = false;
+      }
+
+      async function convertToWav(blob) {
+        try {
+          const audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          const arrayBuffer = await blob.arrayBuffer();
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+          const wavBuffer = audioBufferToWav(audioBuffer);
+          return new Blob([wavBuffer], { type: "audio/wav" });
+        } catch (error) {
+          console.error("Erro na conversão do áudio para WAV:", error);
+          alert(
+            "Houve um problema ao processar o áudio. Por favor, tente novamente."
+          );
+          throw error;
+        }
+      }
+
+      function audioBufferToWav(buffer) {
+        const numOfChan = buffer.numberOfChannels,
+          length = buffer.length * numOfChan * 2 + 44,
+          bufferArr = new ArrayBuffer(length),
+          view = new DataView(bufferArr),
+          channels = [],
+          sampleRate = buffer.sampleRate;
+        let offset = 0,
+          pos = 0;
+
+        function setUint16(data) {
+          view.setUint16(pos, data, true);
+          pos += 2;
         }
 
-        function stopRecording() {
-            mediaRecorder.stop();
-            document.getElementById('recordButton').classList.remove('recording');
-            document.getElementById('recordIcon').innerText = 'mic';
-            isRecording = false;
+        function setUint32(data) {
+          view.setUint32(pos, data, true);
+          pos += 4;
         }
 
-        function uploadRecording(blob) {
-            document.getElementById('uploadingMessage').style.display = 'block';
-            document.getElementById('recordButton').disabled = true;
+        setUint32(0x46464952); // "RIFF"
+        setUint32(length - 8); // file length - 8
+        setUint32(0x45564157); // "WAVE"
 
-            convertToWav(blob).then(wavBlob => {
-                let textInput = document.getElementById('text');
-                let formData = new FormData();
-                formData.append('audio', wavBlob, 'recording.wav');
-                formData.append('text', textInput.value);
-                formData.append('category', textInput.dataset.category || 'random'); // Inclui a categoria
-                let xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload', true);
+        setUint32(0x20746d66); // "fmt " chunk
+        setUint32(16); // length of fmt chunk
+        setUint16(1); // PCM
+        setUint16(numOfChan);
+        setUint32(sampleRate);
+        setUint32(sampleRate * 2 * numOfChan);
+        setUint16(numOfChan * 2);
+        setUint16(16);
 
-                xhr.upload.addEventListener('progress', function (e) {
-                    if (e.lengthComputable) {
-                        let percentComplete = (e.loaded / e.total) * 100;
-                        document.getElementById('uploadProgress').value = percentComplete;
-                        document.getElementById('uploadingText').innerText = `Envoi de l’audio... ${Math.round(percentComplete)}% terminé.`;
-                    }
-                });
+        setUint32(0x61746164); // "data" chunk
+        setUint32(length - pos - 4); // data length
 
-                xhr.onload = function () {
-                    if (xhr.status === 200) {
-                        let data = JSON.parse(xhr.responseText);
-                        document.getElementById('ratio').innerText = data.ratio;
-                        document.getElementById('completeness').innerText = data.completeness_score;
-                        document.getElementById('diff').innerHTML = data.diff_html;
-                        window.pronunciations = data.pronunciations;
-                        document.getElementById('uploadingMessage').style.display = 'none';
-                        document.getElementById('recordButton').disabled = false;
-                    } else {
-                        handleUploadError(xhr);
-                    }
-                };
+        for (let i = 0; i < buffer.numberOfChannels; i++)
+          channels.push(buffer.getChannelData(i));
 
-                xhr.onerror = function () {
-                    handleUploadError(xhr);
-                };
-
-                xhr.send(formData);
-            }).catch(error => {
-                document.getElementById('uploadingMessage').style.display = 'none';
-                document.getElementById('recordButton').disabled = false;
-                alert("Erro ao enviar o áudio. Por favor, tente novamente.");
-            });
+        while (pos < length) {
+          for (let i = 0; i < numOfChan; i++) {
+            const sample = Math.max(-1, Math.min(1, channels[i][offset]));
+            view.setInt16(
+              pos,
+              sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+              true
+            );
+            pos += 2;
+          }
+          offset++;
         }
 
-        function handleUploadError(xhr) {
-            console.error("Erro no envio do áudio:", xhr);
-            document.getElementById('uploadingText').innerText = 'Erro no envio do áudio. Tente novamente.';
-            document.getElementById('uploadingMessage').style.display = 'none';
-            document.getElementById('recordButton').disabled = false;
-        }
+        return bufferArr;
+      }
 
-        async function convertToWav(blob) {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const arrayBuffer = await blob.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      // Função para gerar uma frase
+      function generateSentence() {
+        let category = document.getElementById("category").value;
+        disableButtons();
+        showMessage("Génération de la phrase en cours...");
 
-                const wavBuffer = audioBufferToWav(audioBuffer);
-                return new Blob([wavBuffer], { type: 'audio/wav' });
-            } catch (error) {
-                console.error("Erro na conversão do áudio para WAV:", error);
-                alert("Houve um problema ao processar o áudio. Por favor, tente novamente.");
-                throw error;
+        fetch("/get_sentence", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "category=" + encodeURIComponent(category),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Erreur dans la réponse de l'API");
             }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.error) {
+              alert(data.error);
+            } else {
+              document.getElementById("text").value = data.fr_sentence;
+              document.getElementById("text").dataset.category = data.category;
+              fetchPronunciation(data.fr_sentence);
+            }
+          })
+          .catch((error) => {
+            console.error("Erreur:", error);
+            alert(
+              "Une erreur est survenue lors de la génération de la phrase."
+            );
+          })
+          .finally(() => {
+            enableButtons();
+            hideMessage();
+          });
+      }
+
+      // Adicionar event listener para clicar nas palavras de pronúncia
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("word")) {
+          showPronunciation(event.target.innerText);
         }
-
-        function audioBufferToWav(buffer) {
-            const numOfChan = buffer.numberOfChannels,
-                length = buffer.length * numOfChan * 2 + 44,
-                bufferArr = new ArrayBuffer(length),
-                view = new DataView(bufferArr),
-                channels = [],
-                sampleRate = buffer.sampleRate;
-            let offset = 0,
-                pos = 0;
-
-            function setUint16(data) {
-                view.setUint16(pos, data, true);
-                pos += 2;
-            }
-
-            function setUint32(data) {
-                view.setUint32(pos, data, true);
-                pos += 4;
-            }
-
-            setUint32(0x46464952); // "RIFF"
-            setUint32(length - 8); // file length - 8
-            setUint32(0x45564157); // "WAVE"
-
-            setUint32(0x20746d66); // "fmt " chunk
-            setUint32(16); // length of fmt chunk
-            setUint16(1); // PCM
-            setUint16(numOfChan);
-            setUint32(sampleRate);
-            setUint32(sampleRate * 2 * numOfChan);
-            setUint16(numOfChan * 2);
-            setUint16(16);
-
-            setUint32(0x61746164); // "data" chunk
-            setUint32(length - pos - 4); // data length
-
-            for (let i = 0; i < buffer.numberOfChannels; i++)
-                channels.push(buffer.getChannelData(i));
-
-            while (pos < length) {
-                for (let i = 0; i < numOfChan; i++) {
-                    const sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                    view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-                    pos += 2;
-                }
-                offset++;
-            }
-
-            return bufferArr;
-        }
-
-        // Função para gerar uma frase
-        function generateSentence() {
-            let category = document.getElementById('category').value;
-            disableButtons();
-            showMessage('Génération de la phrase en cours...');
-
-            fetch('/get_sentence', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'category=' + encodeURIComponent(category)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erreur dans la réponse de l\'API');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        document.getElementById('text').value = data.fr_sentence;
-                        document.getElementById('text').dataset.category = data.category;
-                        fetchPronunciation(data.fr_sentence);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la génération de la phrase.');
-                })
-                .finally(() => {
-                    enableButtons();
-                    hideMessage();
-                });
-        }
-
-        // Adicionar event listener para clicar nas palavras de pronúncia
-        document.addEventListener('click', function (event) {
-            if (event.target.classList.contains('word')) {
-                showPronunciation(event.target.innerText);
-            }
-        });
+      });
     </script>
-</body>
-
+  </body>
 </html>

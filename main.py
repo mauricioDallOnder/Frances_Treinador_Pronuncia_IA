@@ -20,6 +20,7 @@ import json
 # Importar os módulos WordMatching e WordMetrics
 import WordMatching
 import WordMetrics
+import re
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -148,6 +149,164 @@ h_aspirate_words = [
     "hurler", "huron", "husky", "hutte", "hyène"
 ]
 
+
+
+
+
+
+
+def highlight_pattern(word, pattern):
+    """
+    Realça (destaca) o primeiro match do padrão `pattern` na `word` em vermelho.
+    Retorna a palavra com o trecho correspondente destacado em <span style="color:red">...</span>.
+    Se não houver match, retorna a palavra original.
+    """
+    m = re.search(pattern, word)
+    if m:
+        start, end = m.start(), m.end()
+        # Destaca apenas o grupo que você quer realçar (por exemplo, o grupo 1)
+        # Caso o pattern tenha grupos, use m.group(1) ou outro grupo.
+        # Se quiser destacar exatamente o que o pattern casou, use m.group(0).
+        # Aqui assumimos que o padrão principal está no primeiro grupo de captura.
+        highlighted_part = m.group(1) if m.lastindex else m.group(0)
+        # Agora substitui apenas essa parte:
+        highlighted_word = (word[:m.start(1)] + '<span style="color:red">' + highlighted_part + '</span>' 
+                            + word[m.end(1):])
+        return highlighted_word  
+    return word
+
+def get_pronunciation_hints(word):
+    messages = []
+    highlighted_word = word
+
+    import re
+    front_vowels = 'iéeèêëïyæœ'
+    vowels = 'aeiouéêèëíóôúãõœæy'
+    consonants = 'bcdfgjklmnpqrstvwxzʃʒɲŋçh'
+
+    def apply_pattern(pattern, explanation):
+        nonlocal highlighted_word
+        if re.search(pattern, highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, pattern)
+            messages.append(explanation)
+
+    apply_pattern(r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+                  "a sequência destacada indica um som nasal [ã], semelhante ao 'an' em 'canto'.")
+
+    apply_pattern(r'(in|im|yn|ym|ein|ain|ien|aim)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+                  "a sequência destacada representa um som nasal [ãn], como um 'ãn' em 'pãnse'.")
+
+    apply_pattern(r'(on|om)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+                  "a sequência destacada dá um som nasal [õ], parecido com 'on' em português.")
+    apply_pattern(r'(un|um)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+                  "a sequência destacada produz um som nasal [œ̃], característico do francês ('un').")
+    apply_pattern(r'(au|aux|eau|eaux)', 
+                  "essa sequência é pronunciada como [ô].")
+
+    if re.search(r'e' + consonants + '{2,}', highlighted_word):
+        messages.append('quando "e" é seguido de duas ou mais consoantes, tende a soar mais fechado ([ɛ]), como "é".')
+
+    apply_pattern(r'(x)(?=' + consonants + ')', 
+                  '"x" seguido de consoante soa como [ks].')
+    apply_pattern(r'(y)(?=[' + vowels + '])', 
+                  '"y" antes de vogal tem som de [j].')
+    apply_pattern(r'(c)(?=[' + front_vowels + '])', 
+                  '"c" antes de vogal frontal soa como [s].')
+    apply_pattern(r'(oy)',
+                  '"oy" soa como "uai" do mineiro.')
+    apply_pattern(r'(ch)', 
+                  '"ch" soa como [ʃ], parecido com "ch" em "chave".')
+    apply_pattern(r'(j|g)(?=[eiy])', 
+                  '"j" e "g" antes de "e", "i" ou "y" soam [ʒ], como "j" em "jogar".')
+    apply_pattern(r'(gn)', 
+                  '"gn" soa como [nh], similar a "nh" em português.')
+    apply_pattern(r'(e|es)$', 
+                  'No final da palavra, geralmente esse "e/es" não são pronunciados.')
+    
+    apply_pattern(r'(oi)', 'a sequência "oi" é pronunciada como [wa].')
+
+        # 3. "ou" → [u]
+    apply_pattern(r'(ou)', 'essa sequência "ou" é pronunciada como [u].')
+
+    # 7. "ch" → [ʃ] (sh)
+    apply_pattern(r'(ch)', '"ch" soa como [ʃ], parecido com "sh".')
+
+    # 8. "ille" → [iê]
+    apply_pattern(r'(ille)', '"ille" é pronunciado como [iê].')
+
+        # 9. "eu" → [œ]
+    apply_pattern(r'(eu)', '"eu" é pronunciado como [u] fechado.')
+   
+        # 11. "é" → [ê]
+    apply_pattern(r'(é)', '"é" é pronunciado como [ê] fechado')
+
+    # 12. "è", "ê", "ai", "ei" → [é]
+    apply_pattern(r'(è|ê|ai|ei)', 'essas combinações são pronunciadas como [é] aberto.')
+
+    # 13. "er" (final) → [ê]
+    apply_pattern(r'(er)$', 'no final da palavra, "er" é pronunciado como [ê] fechado.')
+    
+    # 18. "qu" → [k]
+    apply_pattern(r'(qu)', '"qu" é pronunciado como [k].')
+
+
+
+    if re.search(r'(chat)$', highlighted_word):
+        highlighted_word = highlight_pattern(highlighted_word, r'(t)$')
+        messages.append('"t" final é mudo, então "chat" soa como "chá".')
+
+    if re.search(r'(grand|quand)$', highlighted_word):
+        highlighted_word = highlight_pattern(highlighted_word, r'(d)$')
+        messages.append('na liaison, o "d" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
+
+    if re.match(r'^j\'ai$', word):
+        messages.append('em "j\'ai regardé", na fala rápida, pode soar "j\'ai r\'gardé", omitindo levemente a vogal intermediária.')
+
+    if word.lower() == 'le':
+        if re.search(r'(e)$', highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, r'(e)$')
+            messages.append('no artigo "le", o "e" é muito curto e neutro, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".')
+
+    if word.lower() == 'les':
+        if re.search(r'(es)$', highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, r'(es)$')
+            messages.append('no artigo "les", o "es" soa como "lê", diferenciando-se de "le" (lu). Ex: "les chats" → "lê chá".')
+
+    if re.search(r'(chats)$', highlighted_word):
+        if re.search(r'(s)$', highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, r'(s)$')
+            messages.append('em "chats", o "s" final é mudo, então "chats" soa como "chá", igual ao singular. A distinção plural/singular vem do artigo.')
+
+    if 'ph' in word:
+        if re.search(r'(ph)', highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, r'(ph)')
+            messages.append('"ph" soa como [f]. Ex: "photo" → "fôto".')
+
+    if 'th' in word:
+        if re.search(r'(th)', highlighted_word):
+            highlighted_word = highlight_pattern(highlighted_word, r'(th)')
+            messages.append('"th" costuma ser pronunciado como [t].')
+
+    if messages:
+        # Aqui envolvemos a palavra final já com todos os destaques em vermelho
+        # agora dentro de <strong>...</strong>
+        final_message = f"<strong>{highlighted_word}</strong>: " + " ".join(messages)
+        return {
+            "highlighted_word": highlighted_word,
+            "messages": [final_message]
+        }
+    else:
+        return {
+            "highlighted_word": highlighted_word,
+            "messages": []
+        }
+
+
+
+
+
+
+
 # Funções de pronúncia e transcrição
 def get_pronunciation(word):
     word_normalized = word.lower()
@@ -199,26 +358,34 @@ def remove_silent_endings(pronunciation, word):
     return pronunciation
 
 
-
-
+# Ajustar listas conforme sua necessidade
 vogais_orais = ['a', 'e', 'i', 'o', 'u', 'é', 'ê', 'í', 'ó', 'ô', 'ú', 'ø', 'œ', 'ə']
 vogais_nasais = ['ã', 'ẽ', 'ĩ', 'õ', 'ũ']
 semivogais = ['j', 'w', 'ɥ']
 grupos_consonantais_especiais = ['tch', 'dj', 'sj', 'dʒ', 'ks']
-
-# Ajuste essas listas conforme necessário para o seu mapeamento.
 consoantes_base = [
     'b','d','f','g','k','l','m','n','p','ʁ','r','s','t','v','z','ʃ','ʒ','ɲ','ŋ','ç'
 ]
 
+excecoes_semivogais = {
+    # Exemplos de exceções: padrão -> substituição
+    # Caso queira ajustar manualmente certos clusters após a primeira passagem.
+    # Por exemplo, se "sós.jó" sempre deveria ficar "sósjó"
+    ("sós","jó"): ["sósjó"],
+    ("próm","uv"): ["pró","muv"],  # exemplo hipotético
+}
+
 def e_vogal(c):
-    return c in vogais_orais or c in vogais_nasais
+    return (c in vogais_orais) or (c in vogais_nasais)
+
+def e_vogal_nasal(c):
+    return c in vogais_nasais
 
 def e_semivogal(c):
     return c in semivogais
 
 def e_consoante(c):
-    return (c in consoantes_base)
+    return c in consoantes_base
 
 def e_grupo_consonantal(seq):
     return seq in grupos_consonantais_especiais
@@ -240,10 +407,70 @@ def tokenizar_palavra(palavra):
             i += 1
     return tokens
 
-def silabificar_refinado(palavra):
-    # Esta função é um ponto de partida para uma silabificação mais controlada.
-    tokens = tokenizar_palavra(palavra)
+def ajustar_semivogais(silabas):
+    # Primeiro, mover semivogais do final da sílaba se a próxima inicia com vogal
+    novas_silabas = []
+    i = 0
+    while i < len(silabas):
+        s = silabas[i]
+        if i < len(silabas)-1:
+            ultima_letra = s[-1]
+            proxima_silaba = silabas[i+1]
+            if ultima_letra in semivogais and e_vogal(proxima_silaba[0]):
+                # Move a semivogal para a próxima sílaba
+                s = s[:-1]
+                proxima_silaba = ultima_letra + proxima_silaba
+                novas_silabas.append(s)
+                silabas[i+1] = proxima_silaba
+            else:
+                novas_silabas.append(s)
+        else:
+            # Última sílaba, apenas adiciona
+            novas_silabas.append(s)
+        i += 1
 
+    silabas = novas_silabas
+
+    # Agora, tentar mesclar semivogais do início de uma sílaba anterior se a anterior terminou em vogal
+    # Exemplo: se anterior terminar em vogal e a atual começar com semivogal + vogal, podemos unir.
+    # Cuidado para não bagunçar a lógica já aplicada. Faça testes com frases reais.
+    novas_silabas = []
+    i = 0
+    while i < len(silabas):
+        if i > 0:
+            # Verifica se a sílaba atual começa com semivogal e a anterior termina em vogal
+            si = silabas[i]
+            anterior = novas_silabas[-1]
+            if si and e_semivogal(si[0]) and e_vogal(anterior[-1]):
+                # Une a semivogal com a sílaba anterior
+                novas_silabas[-1] = novas_silabas[-1] + si
+            else:
+                novas_silabas.append(si)
+        else:
+            novas_silabas.append(silabas[i])
+        i += 1
+
+    silabas = novas_silabas
+
+    # Aplicar exceções específicas de semivogais:
+    # Procurar padrões em pares de sílabas e substituir caso encontre
+    i = 0
+    refinadas = []
+    while i < len(silabas):
+        if i < len(silabas)-1:
+            par = (silabas[i], silabas[i+1])
+            if par in excecoes_semivogais:
+                # Substituir pelo padrão definido
+                refinadas.extend(excecoes_semivogais[par])
+                i += 2
+                continue
+        refinadas.append(silabas[i])
+        i += 1
+
+    return refinadas
+
+def silabificar_refinado(palavra):
+    tokens = tokenizar_palavra(palavra)
     silabas = []
     silaba_atual = []
     encontrou_vogal = False
@@ -251,69 +478,76 @@ def silabificar_refinado(palavra):
     for t in tokens:
         if e_vogal(t):
             if encontrou_vogal and silaba_atual:
-                # Já tinha vogal, fecha a sílaba atual e começa outra
                 silabas.append(''.join(silaba_atual))
                 silaba_atual = [t]
             else:
                 silaba_atual.append(t)
                 encontrou_vogal = True
         else:
-            # Consoante ou semivogal
             silaba_atual.append(t)
 
     if silaba_atual:
         silabas.append(''.join(silaba_atual))
 
-    # Aqui você poderia aplicar outras regras, por exemplo,
-    # checar se semivogais devem ficar na sílaba anterior ou seguinte,
-    # ajustar grupos de consoantes, etc.
+    # Ajustar semivogais após a primeira criação de sílabas
+    silabas = ajustar_semivogais(silabas)
 
     return silabas
 
 def unir_silabas_com_pontos(silabas):
     return '.'.join(silabas)
 
-def ajustar_liaison_manual(palavras_silabificadas):
-    # Exemplo: se quiser tratar "nous allons" para ficar "nu.z a.ló̃z",
-    # você pode detectar essas palavras e ajustar manualmente.
-    # Isso é opcional e depende do nível de controle que você quer.
-    # Por enquanto, deixamos essa função como um simples retorno.
-    return palavras_silabificadas
+def aplicar_regras_de_liaison(texto):
+    # Adicione aqui quaisquer substituições adicionais finais.
+    # Se quiser remover esta função, pode, mas ela pode ser útil
+    # caso queira ajustar casos específicos de liaison.
+    # Exemplo:
+    # texto = texto.replace("nu a", "nu.z a")
+    return texto
 
-# Agora ajustamos a função transliterate_and_convert_sentence para usar a nova silabificação
+def gerar_versao_usuario(frase_com_pontos):
+    # Remove os pontos para o usuário final e reagrupa as palavras
+    # Supondo que as palavras já estão separadas por espaços, basta remover os pontos
+    palavras = frase_com_pontos.split()
+    palavras_sem_pontos = [p.replace('.', '') for p in palavras]
+    return ' '.join(palavras_sem_pontos)
+
+# Exemplo de uso:
+# Frase no backend: "jê truv qu.é lê ʀez.e.ô sós.jó só̃t utch.il pur próm.uv.u.ar só̃ trav.aj"
+# Para o usuário final: remover pontos e apresentar palavras inteiras.
+# Backend: jê truv qu.é lê ʀez.e.ô sós.jó só̃t utch.il pur próm.uv.u.ar só̃ trav.aj
+# Usuario: jê truv quê lê ʀezeô sósjó só̃t utchil pur prómuvuar só̃ travaj
+
+# Exemplo de integração com transliterate_and_convert_sentence (presumindo que já existe no seu código):
 def transliterate_and_convert_sentence(sentence):
     words = sentence.split()
-    # Tratar apóstrofos
     words = handle_apostrophes(words)
     pronunciations = [get_pronunciation(word) for word in words]
-    # Aplicar liaisons
     pronunciations = apply_liaisons(words, pronunciations)
-    # Remover terminações silenciosas
     pronunciations = [remove_silent_endings(pron, word) for pron, word in zip(pronunciations, words)]
-    
-    # Converter cada pronúncia para português
+
     palavras_convertidas = [
         convert_pronunciation_to_portuguese(pron, idx, pronunciations)
         for idx, pron in enumerate(pronunciations)
     ]
 
-    # Agora aplicamos a silabificação refinada palavra a palavra.
     palavras_silabificadas = []
     for p in palavras_convertidas:
         silabas = silabificar_refinado(p)
         palavras_silabificadas.append(unir_silabas_com_pontos(silabas))
 
-    # Aqui você pode chamar a função de ajuste manual se quiser
-    palavras_silabificadas = ajustar_liaison_manual(palavras_silabificadas)
+    frase_com_pontos = ' '.join(palavras_silabificadas)
+    frase_com_pontos = aplicar_regras_de_liaison(frase_com_pontos)
 
-    # Une as palavras resultando na frase final
-    transcricao_final = ' '.join(palavras_silabificadas)
+    # Gerar versão para o usuário
+    frase_usuario = gerar_versao_usuario(frase_com_pontos)
 
-    return transcricao_final
+    # Dependendo de sua lógica, você pode retornar as duas versões:
+    # Backend: com pontos
+    # Usuário: sem pontos
+    print(frase_com_pontos)
+    return frase_usuario
 
-
-
- 
   
 
 def split_into_phonemes(pronunciation):
@@ -565,6 +799,24 @@ def pronounce():
     pronunciation = transliterate_and_convert_sentence(text)
     return jsonify({'pronunciations': pronunciation})
 
+@app.route('/hints', methods=['POST'])
+def hints():
+    text = request.form['text']
+    words = text.split()
+    hints_result = {}
+
+    for w in words:
+        data = get_pronunciation_hints(w)
+        if data["messages"]:
+            hints_result[w] = {
+                "highlighted_word": data["highlighted_word"],
+                "messages": data["messages"]
+            }
+
+    return jsonify({"hints": hints_result})
+
+
+
 @app.route('/get_sentence', methods=['POST'])
 def get_sentence():
     try:
@@ -685,6 +937,8 @@ def upload():
     total_words = correct_count + incorrect_count
     ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
     completeness_score = (len(mapped_words) / len(words_real)) * 100 if len(words_real) > 0 else 0
+
+    
 
     return jsonify({
         'ratio': f"{ratio:.2f}",
