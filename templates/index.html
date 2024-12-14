@@ -272,7 +272,9 @@
                 </option>
                 <option value="comparatif">Le comparatif</option>
                 <option value="superlatif">Le superlatif</option>
-                <option value="formation_des_adverbes">formation_des_adverbes</option>
+                <option value="formation_des_adverbes">
+                  formation_des_adverbes
+                </option>
                 <option value="negation">La negation</option>
               </optgroup>
             </select>
@@ -437,36 +439,29 @@
 
             // Após mostrar a pronúncia, buscar dicas
             fetch("/hints", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-  },
-  body: "text=" + encodeURIComponent(text),
-})
-.then((response) => response.json())
-.then((hintsData) => {
-  const hintsList = document.getElementById("hintsList");
-  hintsList.innerHTML = ""; // Limpa dicas anteriores
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: "text=" + encodeURIComponent(text),
+            })
+              .then((response) => response.json())
+              .then((hintsData) => {
+                const hintsList = document.getElementById("hintsList");
+                hintsList.innerHTML = "";
 
-  const hints = hintsData.hints || {};
-  const words = Object.keys(hints);
-
-  if (words.length > 0) {
-    words.forEach((word) => {
-      const wordData = hints[word]; 
-      const final_messages = wordData.messages.join(' '); 
-
-      // Cria a <li> para colocar a mensagem final
-      const li = document.createElement("li");
-      // final_messages já contém "palavra_destacada: mensagens..."
-      li.innerHTML = final_messages;
-
-      hintsList.appendChild(li);
-    });
-  } else {
-    hintsList.innerHTML = "<li>Aucune suggestion de prononciation supplémentaire.</li>";
-  }
-
+                const hints = hintsData.hints || [];
+                if (hints.length > 0) {
+                  hints.forEach((hintItem) => {
+                    const li = document.createElement("li");
+                    // Aqui escolhemos usar 'highlighted_word' para mostrar com destaques:
+                    const explanationsStr = hintItem.explanations.join(" ");
+                    li.innerHTML = `<strong>${hintItem.highlighted_word}:</strong> ${explanationsStr}`;
+                    hintsList.appendChild(li);
+                  });
+                } else {
+                  hintsList.innerHTML = "<li>Nenhuma sugestão adicional.</li>";
+                }
               });
           });
       }

@@ -176,130 +176,240 @@ def highlight_pattern(word, pattern):
     return word
 
 def get_pronunciation_hints(word):
-    messages = []
-    highlighted_word = word
-
-    import re
     front_vowels = 'iéeèêëïyæœ'
     vowels = 'aeiouéêèëíóôúãõœæy'
     consonants = 'bcdfgjklmnpqrstvwxzʃʒɲŋçh'
 
-    def apply_pattern(pattern, explanation):
-        nonlocal highlighted_word
-        if re.search(pattern, highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, pattern)
-            messages.append(explanation)
+    matches_found = []
+    lower_word = word.lower()
 
-    apply_pattern(r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  " A sequência (am|em|an|en) indica um som nasal [ã], semelhante ao 'an' em 'canto'.")
+    def add_match_object(m, explanation):
+        start, end = m.start(), m.end()
+        matched_text = m.group(0)
+        expl = explanation.format(match=matched_text)
+        matches_found.append((start, end, matched_text, expl))
 
-    apply_pattern(r'(in|im|yn|ym|ein|ain|ien|aim)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  " A sequência (in|im|yn|ym|ein|ain|ien|aim) representa um som nasal [ãn], como um 'ãn' em 'pãnse'.")
+    # Casos especiais ---------------------------------------------------------
+    if lower_word == "j'ai":
+        idx = word.find('ai')
+        if idx != -1:
+            start, end = idx, idx+2
+            matched_text = word[start:end]
+            expl = 'Em "j\'ai", a pronúncia fica aproximadamente como "jê".'
+            matches_found.append((start, end, matched_text, expl))
 
-    apply_pattern(r'(on|om)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  " A sequência (on/om) dá um som nasal [õ], parecido com 'on' em português.")
-    apply_pattern(r'(un|um)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-                  " A sequência (un/um) produz um som nasal [œ̃], característico do francês ('un').")
-    apply_pattern(r'(au|aux|eau|eaux)', 
-                  " A sequência (au|aux|eau|eaux) é pronunciada como [ô].")
-    apply_pattern(r'(oy)',
-                  ' "oy" soa como "uai" do mineiro.')
-    if re.search(r'e' + consonants + '{2,}', highlighted_word):
-        messages.append('Quando "e" é seguido de duas ou mais consoantes, tende a soar mais fechado ([ɛ]), como "é".')
+    if lower_word == 'le':
+        if word.endswith('e'):
+            start = len(word)-1
+            end = len(word)
+            matched_text = word[start:end]
+            expl = 'No artigo "le", o "e" é muito curto, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".'
+            matches_found.append((start, end, matched_text, expl))
 
-    apply_pattern(r'(x)(?=' + consonants + ')', 
-                  ' "x" seguido de consoante soa como [ks].')
-    apply_pattern(r'(y)(?=[' + vowels + '])', 
-                  ' "y" antes de vogal tem som de [j].')
-    apply_pattern(r'(c)(?=[' + front_vowels + '])', 
-                  '"c" antes de vogal frontal soa como [s].')
-    
-    apply_pattern(r'(ch)', 
-                  ' "ch" soa como [ʃ], parecido com "ch" em "chave".')
-    apply_pattern(r'(j|g)(?=[eiy])', 
-                  ' "j" e "g" antes de "e", "i" ou "y" soam [ʒ], como "j" em "jogar".')
-    apply_pattern(r'(gn)', 
-                  '"gn" soa como [nh], similar a "nh" em português.')
-    apply_pattern(r'(e|es)$', 
-                  ' No final da palavra, geralmente esse "e/es" não são pronunciados.')
-    
-    apply_pattern(r'(oi)', ' A sequência "oi" é pronunciada como [wa].')
+    if lower_word == 'les':
+        if word.endswith('es'):
+            start = len(word)-2
+            end = len(word)
+            matched_text = word[start:end]
+            expl = 'No artigo "les", "{match}" soa como "lê", diferente de "le" (lu). Ex: "les chats" → "lê chá".'
+            matches_found.append((start, end, matched_text, expl))
 
-        # 3. "ou" → [u]
-    apply_pattern(r'(ou)', ' Essa sequência "ou" é pronunciada como [u].')
+    if lower_word.endswith('chats'):
+        m = re.search(r'(s)$', word)
+        if m:
+            add_match_object(m, 'Em "chats", o "{match}" final é mudo, então "chats" soa como "chá".')
 
-    # 7. "ch" → [ʃ] (sh)
-    apply_pattern(r'(ch)', ' "ch" soa como [ʃ], parecido com "sh".')
+    if re.search(r'(grand|quand)$', lower_word):
+        m = re.search(r'(d)$', word)
+        if m:
+            add_match_object(m, 'Na ligação (liaison), o "{match}" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
 
-    # 8. "ille" → [iê]
-    apply_pattern(r'(ille)', ' "ille" é pronunciado como [iê].')
+    # Padrões genéricos sem AFI, usando comparações com o português:
+    # Nasais: descrever usando "ã", "ãn", "õ", "ẽ" etc.
+    # Vogais aproximadas: usar "é", "ê", "ô", "u" fechado, "iê" etc.
+    # "ch" como 'x' de 'xarope'
+    # "gn" como 'nh'
+    # "j/g(e,i)" como 'j' de "jogar"
+    # etc
 
-        # 9. "eu" → [œ]
-    apply_pattern(r'(eu)', ' "eu" é pronunciado como [u] fechado.')
-   
-        # 11. "é" → [ê]
-    apply_pattern(r'(é)', ' "é" é pronunciado como [ê] fechado')
+    patterns = [
+        (r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+         "A sequência {match} indica um som nasal parecido com 'ãn'. Ex: 'en' ~ 'ãn'."),
+        (r'(in|im|yn|ym|ein|ain|ien|aim)(?=[bdfgjklpqrstvwxzʃʒɲŋç])',
+         "A sequência {match} representa um som nasal tipo 'iñ' ou 'iãn', lembrando 'im' nasalizado."),
+        (r'(on|om)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+         "A sequência {match} dá um som nasal parecido com 'õ', como em 'põe'."),
+        (r'(un|um)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
+         "A sequência {match} produz um som nasal parecido com 'œ̃', próximo de 'ãn' com os lábios arredondados. Pense em 'un' como 'ãn' mais fechado."),
+        (r'(au|aux|eau|eaux)', 
+         "A sequência {match} é pronunciada aproximadamente como 'ô'."),
+        (r'(oy)',
+         "{match} soa como 'uai', semelhante ao mineiro 'uai'."),
+        (r'(x)(?=' + consonants + ')', 
+         '"{match}" antes de consoante soa como ' + '"ks"' + '.'),
+        (r'(y)(?=[' + vowels + '])', 
+         '"{match}" antes de vogal soa como o ' + '"i" deslizado, tipo "ia" → "iá"'),
+        (r'(c)(?=[' + front_vowels + '])', 
+         '"{match}" antes de vogal frontal soa como "s".'),
+        (r'(ch)', 
+         '"{match}" soa como "x" em "xarope".'),
+        (r'(j|g)(?=[eiy])', 
+         '"{match}" soa como o "j" de "jogar" antes de e, i ou y.'),
+        (r'(gn)', 
+         '"{match}" soa como "nh" em português.'),
+        (r'(e|es)$', 
+         'No final da palavra, "{match}" geralmente não é pronunciado.'),
+        (r'(oi)', 
+         'A sequência {match} soa como "uá".'),
+        (r'(ou)', 
+         'A sequência {match} soa como "u" fechado.'),
+        (r'(ille)', 
+         '"{match}" soa como "iê".'),
+        (r'(eu)', 
+         '"{match}" tem um som semelhante a "eu" fechado, algo entre "e" e "u".'),
+        (r'(é)', 
+         '"{match}" soa como "ê" mais fechado.'),
+        (r'(è|ê|ai|ei)', 
+         'A combinação {match} soa como "é" aberto.'),
+        (r'(er)$', 
+         'No final da palavra, "{match}" soa como "ê" fechado.'),
+        (r'(qu)', 
+         '"{match}" é pronunciado como "k".'),
+        (r'(ais|ait|aient)$', 
+         'Ao final, "{match}" costuma soar como "é".'),
+        (r'(h)', 
+         '"{match}" geralmente é mudo. H aspirado não se liga à vogal seguinte, mas não altera muito o som.'),
+        (r'(ge)$', 
+         'No final, "{match}" costuma soar como "je" (o j de "jogar").'),
+        (r'(ail)', 
+         '"{match}" soa como "ai" (ái).'),
+        (r'(eil)', 
+         '"{match}" soa como "ei" fechado.'),
+        (r'(euil)', 
+         '"{match}" soa algo como "õe", um som entre "e" e "u" nasalizado.'),
+        (r'(œil)', 
+         '"{match}" soa semelhante a "ói" curto, com os lábios arredondados.'),
+        (r'(ien)', 
+         '"{match}" soa como "iã" nasalizado.'),
+        (r'(ion)', 
+         '"{match}" soa como "iõ" nasalizado.'),
+        (r'(tion)$', 
+         'No final, "{match}" soa como "siõ" (s + iõ nasal).'),
+        (r'(ier)$', 
+         'No final, "{match}" soa como "iê".'),
+        (r'(iez)$', 
+         'No final da forma verbal, "{match}" soa como "iê".'),
+        (r'(oin)', 
+         'A sequência {match} soa como "uã" nasalizado.'),
+        (r'(ui)', 
+         'A sequência {match} soa como "üi", algo como "wi" em inglês.'),
+        (r'(œu)', 
+         '"{match}" soa entre "eu" e "éu" com lábios arredondados.'),
+        (r'(œ)', 
+         '"{match}" soa como um "é" com lábios arredondados, algo entre "é" e "eu".'),
+        (r'(cc)(?=[eiy])',
+         '"{match}" pode soar como "ks".'),
+        (r'(ç)', 
+         '"{match}" é pronunciado como "s".'),
+        (r'(â)', 
+         '"{match}" indica um "a" mais aberto, semelhante ao "á".'),
+        (r'(î)', 
+         '"{match}" soa como "i" normal.'),
+        (r'(ô)', 
+         '"{match}" soa como "ô" fechado.'),
+        (r'(û)', 
+         '"{match}" soa como um "u" mais fechado, lembrando o "u" francês puxado para os lábios arredondados.'),
+        (r'(pt)$', 
+         'No final, "{match}" não é pronunciado.'),
+        (r'^(ps)', 
+         'No início, "{match}" muitas vezes se reduz a "s". Ex: "psychologie" → "ssicologie".'),
+        (r'(mn)$', 
+         'Ao final, "{match}" muitas vezes simplifica o som, soando mais próximo de "m".'),
+        (r'(ieux)$', 
+         'Ao final, "{match}" soa como "iô" ou "iêu" curto.'),
+        (r'(amment)$',
+         'Em advérbios, "{match}" soa como "amã".'),
+        (r'(emment)$',
+         'Em advérbios, "{match}" soa também como "amã".'),
+        (r'(ti)(?=[aeiouy])', 
+         'Antes de vogal, "{match}" às vezes soa como "tsi".'),
+        (r'(?<=[' + vowels + '])(si)(?=[' + vowels + '])', 
+         'Entre vogais, "{match}" pode soar como "zi".'),
+        (r'(ll)(?=[eiy])',
+         '"{match}" pode soar como "lh" ou um "i" palatalizado, ex: "fille" → "fii".')
+    ]
 
-    # 12. "è", "ê", "ai", "ei" → [é]
-    apply_pattern(r'(è|ê|ai|ei)', ' As combinações (è|ê|ai|ei) são pronunciadas como [é] aberto.')
+    pattern_matches = []
+    for pattern, explanation in patterns:
+        for m in re.finditer(pattern, word):
+            start, end = m.start(), m.end()
+            matched_text = m.group(0)
+            expl = explanation.format(match=matched_text)
+            pattern_matches.append((start, end, matched_text, expl))
 
-    # 13. "er" (final) → [ê]
-    apply_pattern(r'(er)$', ' No final da palavra, "er" é pronunciado como [ê] fechado.')
-    
-    # 18. "qu" → [k]
-    apply_pattern(r'(qu)', ' "qu" é pronunciado como [k].')
+    # 'e' + 2 ou mais consoantes
+    m = re.search(r'e' + consonants + '{2,}', word)
+    if m:
+        matched_text = m.group(0)
+        expl = 'Quando "e" é seguido de duas ou mais consoantes ({match}), tende a ficar mais fechado, soando quase como "é".'.format(match=matched_text)
+        pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
-
-
-    if re.search(r'(chat)$', highlighted_word):
-        highlighted_word = highlight_pattern(highlighted_word, r'(t)$')
-        messages.append('"t" final é mudo, então "chat" soa como "chá".')
-
-    if re.search(r'(grand|quand)$', highlighted_word):
-        highlighted_word = highlight_pattern(highlighted_word, r'(d)$')
-        messages.append('Na liaison, o "d" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
-
-    if re.match(r'^j\'ai$', word):
-        messages.append('Em "j\'ai regardé", na fala rápida, pode soar "j\'ai r\'gardé", omitindo levemente a vogal intermediária.')
-
-    if word.lower() == 'le':
-        if re.search(r'(e)$', highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, r'(e)$')
-            messages.append('No artigo "le", o "e" é muito curto e neutro, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".')
-
-    if word.lower() == 'les':
-        if re.search(r'(es)$', highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, r'(es)$')
-            messages.append('No artigo "les", o "es" soa como "lê", diferenciando-se de "le" (lu). Ex: "les chats" → "lê chá".')
-
-    if re.search(r'(chats)$', highlighted_word):
-        if re.search(r'(s)$', highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, r'(s)$')
-            messages.append('Em "chats", o "s" final é mudo, então "chats" soa como "chá", igual ao singular. A distinção plural/singular vem do artigo.')
-
+    # ph
     if 'ph' in word:
-        if re.search(r'(ph)', highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, r'(ph)')
-            messages.append(' "ph" soa como [f]. Ex: "photo" → "fôto".')
+        for m in re.finditer(r'(ph)', word):
+            matched_text = m.group(0)
+            expl = '"{match}" soa como "f". Ex: "photo" → "fôto".'.format(match=matched_text)
+            pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
+    # th
     if 'th' in word:
-        if re.search(r'(th)', highlighted_word):
-            highlighted_word = highlight_pattern(highlighted_word, r'(th)')
-            messages.append(' "th" costuma ser pronunciado como [t].')
+        for m in re.finditer(r'(th)', word):
+            matched_text = m.group(0)
+            expl = '"{match}" costuma ser pronunciado como "t".'.format(match=matched_text)
+            pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
-    if messages:
-        # Aqui envolvemos a palavra final já com todos os destaques em vermelho
-        # agora dentro de <strong>...</strong>
-        final_message = f"<strong>{highlighted_word}</strong>: " + " ".join(messages)
+    def overlaps_with_existing(start, end, existing_matches):
+        for (s, e, _, _) in existing_matches:
+            if not (end <= s or start >= e):
+                return True
+        return False
+
+    pattern_matches.sort(key=lambda x: x[0])
+    final_matches = matches_found[:]
+
+    for (start, end, matched_text, expl) in pattern_matches:
+        if not overlaps_with_existing(start, end, final_matches):
+            final_matches.append((start, end, matched_text, expl))
+
+    if not final_matches:
         return {
-            "highlighted_word": highlighted_word,
-            "messages": [final_message]
+            "word": word,
+            "highlighted_word": word,
+            "explanations": []
         }
-    else:
-        return {
-            "highlighted_word": highlighted_word,
-            "messages": []
-        }
+
+    final_matches.sort(key=lambda x: x[0])
+
+    result_str = ""
+    prev_end = 0
+    explanations = []
+    for (start, end, matched_text, expl) in final_matches:
+        result_str += word[prev_end:start]
+        result_str += f'<span style="color:red">{word[start:end]}</span>'
+        prev_end = end
+        explanations.append(expl)
+    result_str += word[prev_end:]
+
+    return {
+        "word": word,
+        "highlighted_word": result_str,
+        "explanations": explanations
+    }
+
+
+
+
+
 
 
 
@@ -803,17 +913,16 @@ def pronounce():
 def hints():
     text = request.form['text']
     words = text.split()
-    hints_result = {}
+    hints_result = []
 
     for w in words:
         data = get_pronunciation_hints(w)
-        if data["messages"]:
-            hints_result[w] = {
-                "highlighted_word": data["highlighted_word"],
-                "messages": data["messages"]
-            }
+        if data["explanations"]:
+            hints_result.append(data)
 
     return jsonify({"hints": hints_result})
+
+
 
 
 
