@@ -21,6 +21,7 @@ import json
 import WordMatching
 import WordMetrics
 import re
+import random
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -201,46 +202,19 @@ h_aspirate_words = [
 
 
 
-
-
-
-import re
-import random
-
 # Lista de cores para destaque
 COLOR_LIST = [
-    'red', 'blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'brown',
-    'teal', 'maroon', 'navy', 'olive', 'lime', 'pink', 'gold', 'violet'
+   '#FF0000', '#FF6600', '#CC00FF', '#FFCC00', '#0099FF', 
+                  '#FF9900', '#0033CC', '#666600', '#33CC33', '#990000',
+                  '#339900', '#336600', '#CC3333', '#003366', '#336600',
+                  '#FF3399', '#99FF00', '#FF0033', '#CC3300', '#00CCCC',
+                  '#336633', '#9900CC', '#006600', '#FF3300', '#CC33CC',
+                  '#333300', '#6600CC', '#CC00CC', '#0033FF', '#009966',
+                  '#CC0066', '#33CC00', '#CC6666', '#999900', 'Tomato',
+                  '#336666', '#669966', 'SlateBlue', '#33FF00', '#666600',
+                  '#FF0066', '#CCCC33', '#33CC66', '#0033CC', '#660099',
+                  '#CC0033', '#009966', '#FF0000', '#33CCCC', '#0000FF'
 ]
-
-def highlight_all_patterns(word, pattern):
-    """
-    Realça (destaca) todas as ocorrências do padrão `pattern` na `word` com uma cor aleatória.
-    Retorna a palavra com os trechos correspondentes destacados em <span style="color:cor">...</span>.
-    Se não houver match, retorna a palavra original.
-    """
-    matches = list(re.finditer(pattern, word))
-    if not matches:
-        return word
-    
-    # Ordena os matches do final para o início para evitar problemas com índices ao substituir
-    matches = sorted(matches, key=lambda m: m.start(), reverse=True)
-    
-    highlighted_word = word
-    for m in matches:
-        highlighted_part = m.group(1) if m.lastindex else m.group(0)
-        color = random.choice(COLOR_LIST)
-        if m.lastindex:
-            start, end = m.start(1), m.end(1)
-        else:
-            start, end = m.start(), m.end()
-        highlighted_word = (
-            highlighted_word[:start] +
-            f'<span style="color:{color}">' + highlighted_part + '</span>' +
-            highlighted_word[end:]
-        )
-    
-    return highlighted_word
 
 def get_pronunciation_hints(word):
     """
@@ -259,11 +233,16 @@ def get_pronunciation_hints(word):
     matches_found = []
     lower_word = word.lower()
 
-    def add_match_object(m, explanation):
+    def add_match_object(m, explanation_template):
         start, end = m.start(), m.end()
         matched_text = m.group(0)
-        expl = explanation.format(match=matched_text)
-        matches_found.append((start, end, matched_text, expl))
+        # Seleciona uma cor aleatória para este match
+        color = random.choice(COLOR_LIST)
+        # Formata a explicação com o match destacado
+        expl = explanation_template.format(
+            match=f'<span style="color:{color}; font-weight:bold">{matched_text}</span>'
+        )
+        matches_found.append((start, end, matched_text, expl, color))
 
     # Casos especiais ---------------------------------------------------------
     if lower_word == "j'ai":
@@ -272,48 +251,48 @@ def get_pronunciation_hints(word):
             start, end = idx, idx+2
             matched_text = word[start:end]
             expl = 'Em "j\'ai", a pronúncia fica aproximadamente como "jê".'
-            matches_found.append((start, end, matched_text, expl))
-
+            add_match_object(re.match(r'ai', word[idx:]), 'Em "j\'ai", a pronúncia fica aproximadamente como "jê".')
+    
     if lower_word == 'le':
         if word.endswith('e'):
             start = len(word)-1
             end = len(word)
             matched_text = word[start:end]
             expl = 'No artigo "le", o "e" é muito curto, parecido com "luh" rápido, não "lê". Ex: "le chat" → "luh chá".'
-            matches_found.append((start, end, matched_text, expl))
-
+            add_match_object(re.match(r'e$', word[start:end]), 'No artigo "le", o "e" é muito curto, parecido com "luh" rápido, não "lê". Ex: "le chat" → "luh chá".')
+    
     if lower_word == 'les':
         if word.endswith('es'):
             start = len(word)-2
             end = len(word)
             matched_text = word[start:end]
             expl = 'No artigo "les", soa como "lê", diferente de "le" (lu). Ex: "les chats" → "lê chá".'
-            matches_found.append((start, end, matched_text, expl))
-
+            add_match_object(re.match(r'es$', word[start:end]), 'No artigo "les", soa como "lê", diferente de "le" (lu). Ex: "les chats" → "lê chá".')
+    
     if lower_word.endswith('chats'):
         m = re.search(r'(s)$', word)
         if m:
             add_match_object(m, 'Em "chats", o "{match}" final é mudo, então "chats" soa como "chá".')
-
+    
     if re.search(r'(grand|quand)$', lower_word):
         m = re.search(r'(d)$', word)
         if m:
             add_match_object(m, 'Na ligação (liaison), o "{match}" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
-
+    
     # Padrões genéricos sem AFI, usando comparações com o português:
     patterns = [
         (r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-         "A sequência {match} indica um som nasal parecido com 'ãn'. Ex: 'en' ~ 'ãn'."),
+         'A sequência {match} indica um som nasal parecido com \'ãn\'. Ex: {match} ~ \'ãn\'.'),
         (r'(in|im|yn|ym|ein|ain|ien|aim)(?=[bdfgjklpqrstvwxzʃʒɲŋç])',
-         "A sequência {match} representa um som nasal tipo 'iñ' ou 'iãn', lembrando 'im' nasalizado."),
+         'A sequência {match} representa um som nasal tipo \'iñ\' ou \'iãn\', lembrando \'im\' nasalizado.'),
         (r'(on|om)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-         "A sequência {match} dá um som nasal parecido com 'õ', como em 'põe'."),
+         'A sequência {match} dá um som nasal parecido com \'õ\', como em \'põe\'.'),
         (r'(un|um)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
-         "A sequência {match} produz um som nasal parecido com 'œ̃', próximo de 'ãn' com os lábios arredondados. Pense em 'un' como 'ãn' mais fechado."),
+         'A sequência {match} produz um som nasal parecido com \'œ̃\', próximo de \'ãn\' com os lábios arredondados. Pense em {match} como \'ãn\' mais fechado.'),
         (r'(au|aux|eau|eaux)', 
-         "A sequência {match} é pronunciada aproximadamente como 'ô'."),
+         'A sequência {match} é pronunciada aproximadamente como \'ô\'.'),
         (r'(oy)',
-         "{match} soa como 'uai', semelhante ao mineiro 'uai'."),
+         '{match} soa como \'uai\', semelhante ao mineiro \'uai\'.'),
         (r'(x)(?=[' + consonants + '])', 
          '"{match}" antes de consoante soa como "ks".'),
         (r'(y)(?=[' + vowels + '])', 
@@ -413,32 +392,40 @@ def get_pronunciation_hints(word):
         for m in re.finditer(pattern, word):
             start, end = m.start(), m.end()
             matched_text = m.group(0)
-            expl = explanation.format(match=matched_text)
-            pattern_matches.append((start, end, matched_text, expl))
+            # Seleciona uma cor aleatória para este match
+            color = random.choice(COLOR_LIST)
+            # Formata a explicação com o match destacado
+            expl = explanation.format(
+                match=f'<span style="color:{color}">{matched_text}</span>'
+            )
+            pattern_matches.append((start, end, matched_text, expl, color))
 
     # 'e' + 2 ou mais consoantes
     m = re.search(r'e' + consonants + '{2,}', word)
     if m:
         matched_text = m.group(0)
-        expl = f'Quando "e" é seguido de duas ou mais consoantes ({matched_text}), tende a ficar mais fechado, soando quase como "é".'
-        pattern_matches.append((m.start(), m.end(), matched_text, expl))
+        expl = f'Quando "e" é seguido de duas ou mais consoantes (<span style="color:{"red"}">{matched_text}</span>), tende a ficar mais fechado, soando quase como "é".'
+        # Para consistência, selecione uma cor aleatória
+        color = random.choice(COLOR_LIST)
+        expl = f'Quando "e" é seguido de duas ou mais consoantes (<span style="color:{color}">{matched_text}</span>), tende a ficar mais fechado, soando quase como "é".'
+        pattern_matches.append((m.start(), m.end(), matched_text, expl, color))
 
     # ph
     if 'ph' in word:
         for m in re.finditer(r'(ph)', word):
             matched_text = m.group(0)
-            expl = f'"{matched_text}" soa como "f". Ex: "photo" → "fôto".'
-            pattern_matches.append((m.start(), m.end(), matched_text, expl))
+            expl = f'"<span style="color:{random.choice(COLOR_LIST)}">{matched_text}</span>" soa como "f". Ex: "photo" → "fôto".'
+            pattern_matches.append((m.start(), m.end(), matched_text, expl, None))
 
     # th
     if 'th' in word:
         for m in re.finditer(r'(th)', word):
             matched_text = m.group(0)
-            expl = f'"{matched_text}" costuma ser pronunciado como "t".'
-            pattern_matches.append((m.start(), m.end(), matched_text, expl))
+            expl = f'"<span style="color:{random.choice(COLOR_LIST)}">{matched_text}</span>" costuma ser pronunciado como "t".'
+            pattern_matches.append((m.start(), m.end(), matched_text, expl, None))
 
     def overlaps_with_existing(start, end, existing_matches):
-        for (s, e, _, _) in existing_matches:
+        for (s, e, _, _, _) in existing_matches:
             if not (end <= s or start >= e):
                 return True
         return False
@@ -447,9 +434,10 @@ def get_pronunciation_hints(word):
     pattern_matches.sort(key=lambda x: x[0])
     final_matches = matches_found[:]
 
-    for (start, end, matched_text, expl) in pattern_matches:
+    for match in pattern_matches:
+        start, end, matched_text, expl, color = match
         if not overlaps_with_existing(start, end, final_matches):
-            final_matches.append((start, end, matched_text, expl))
+            final_matches.append(match)
 
     if not final_matches:
         return {
@@ -463,13 +451,16 @@ def get_pronunciation_hints(word):
     result_str = ""
     prev_end = 0
     explanations = []
-    for (start, end, matched_text, expl) in final_matches:
+    for (start, end, matched_text, expl, color) in final_matches:
         result_str += word[prev_end:start]
         
-        # Seleciona uma cor aleatória para cada destaque
-        color = random.choice(COLOR_LIST)
+        # Verifica se uma cor foi fornecida, caso contrário, seleciona uma
+        if color:
+            highlight_color = color
+        else:
+            highlight_color = random.choice(COLOR_LIST)
         
-        result_str += f'<span style="color:{color}">{word[start:end]}</span>'
+        result_str += f'<span style="color:{highlight_color}">{word[start:end]}</span>'
         prev_end = end
         explanations.append(expl)
     result_str += word[prev_end:]
@@ -479,11 +470,6 @@ def get_pronunciation_hints(word):
         "highlighted_word": result_str,
         "explanations": explanations
     }
-
-
-
-
-
 
 
 # Funções de pronúncia e transcrição
