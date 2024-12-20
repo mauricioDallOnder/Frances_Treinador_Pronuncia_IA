@@ -71,7 +71,7 @@ epi = epitran.Epitran('fra-Latn')
 with open('dic.json', 'r', encoding='utf-8') as f:
     ipa_dictionary = json.load(f)
 
-# Mapeamento de fonemas francês para português com regras contextuais
+# Mapeamento de fonemas francês para português com regras contextuais aprimoradas
 french_to_portuguese_phonemes = {
     # Vogais orais
     'i': {'default': 'i'},
@@ -86,32 +86,49 @@ french_to_portuguese_phonemes = {
     'ø': {'default': 'ø'},
     'œ': {'default': 'é'},
     'ə': {'default': 'e'},
-
+    
     # Vogais nasais
     'ɛ̃': {'default': 'ẽ'},
     'ɑ̃': {'default': 'ã'},
     'ɔ̃': {'default': 'õ'},
     'œ̃': {'default': 'ũn'},
     'ð': {'default': 'on'},  # Adapte conforme necessário
-
+    
     # Semivogais
-
     'w': {'default': 'u'},
-    'ɥ': {'default': 'u'},
+    'ɥ': {'default': 'u', 'after_vowel': 'u'},  # Refinamento para contextos após vogais
+    'j': {'default': 'i', 'word_initial': 'i', 'after_consonant': 'i'},  # Adicionado como semivogal
+    
     # Consoantes
     'b': {'default': 'b'},
     'd': {'default': 'd', 'before_i': 'dj'},
     'f': {'default': 'f'},
-    'g': {'default': 'g'},
+    'g': {
+        'default': 'g',
+        'before_front_vowel': 'j',  # Ex: "gilet" -> "jilet"
+        'before_back_vowel': 'g'
+    },
     'ʒ': {'default': 'j', 'word_initial': 'j', 'after_nasal': 'j'},
     'k': {'default': 'k', 'before_front_vowel': 'qu'},
     'l': {'default': 'l'},
     'm': {'default': 'm'},
     'n': {'default': 'n'},
     'p': {'default': 'p'},
-    'ʁ': {'default': 'r', 'word_initial': 'h', 'after_vowel': 'rr', 'after_consonant': 'r'},
-    's': {'default': 's', 'between_vowels': 'z'},
-    't': {'default': 't', 'before_i': 'tch'},
+    'ʁ': {
+        'default': 'r',
+        'word_initial': 'h',
+        'after_vowel': 'rr',
+        'after_consonant': 'r'
+    },
+    's': {
+        'default': 's',
+        'between_vowels': 'z',
+        'word_final': 's'
+    },
+    't': {
+        'default': 't',
+        'before_i': 'tch'
+    },
     'v': {'default': 'v'},
     'z': {'default': 'z'},
     'ʃ': {'default': 'ch'},
@@ -120,20 +137,52 @@ french_to_portuguese_phonemes = {
     'ɲ': {'default': 'nh'},
     'ŋ': {'default': 'ng'},
     'ç': {'default': 's'},
-
-    # Fonemas compostos
-    'sj': {'default': 'ch'},  # Exemplo: "attention"
-    'ks': {'default': 'x'},   # Exemplo: "exact"
-
-    # Outros fonemas
-    'x': {'default': 'x'},
     'ʎ': {'default': 'lh'},
     'ʔ': {'default': ''},  # Fonema glotal stop geralmente não tem equivalente em português
     'θ': {'default': 't'},  # Adapte conforme necessário
-   
     'ɾ': {'default': 'r'},
     'ʕ': {'default': 'r'},  # Adapte conforme necessário
+    
+    # Fonemas compostos
+    'sj': {'default': 'ch'},  # Exemplo: "attention" -> "atenção"
+    'ks': {'default': 'x'},   # Exemplo: "exact" -> "exato"
+    'gz': {'default': 'gz'},  # Exemplo: "exagerer" -> "exagerar"
+    
+    # Outros fonemas
+    'x': {'default': 'x'},
+    
+    # Regras adicionais de contexto
+    'ʃj': {'default': 'chj'},  # Exemplo: "chieur" -> "chieur"
+    'ʒʁ': {'default': 'jr'},   # Exemplo: "journal" -> "jornal"
+    
+    # Tratamento do 'h' aspirado e mudo
+    'h': {
+        'aspirated': 'h',  # Preservar o 'h' aspirado
+        'mute': ''          # Remover o 'h' mudo
+    },
+    
+    # Regras para consoantes duplas em português
+    'kk': {'default': 'c'},
+    'tt': {'default': 't'},
+    'pp': {'default': 'p'},
+    'bb': {'default': 'b'},
+    'gg': {'default': 'g'},
+    
+    # Tratamento especial para consoantes finais
+    'k$': {'default': 'c'},
+    'g$': {'default': 'g'},
+    'p$': {'default': 'p'},
+    't$': {'default': 't'},
+    
+    # Refinamento para fonemas intervocálicos
+    'ɡə': {'default': 'gue'},
+    'ɡi': {'default': 'gi'},
+    
+    # Adição de fonemas menos comuns
+    'ʧ': {'default': 'tch'},
+    'ʤ': {'default': 'dj'},
 }
+
 
 # Características fonéticas
 
@@ -155,27 +204,54 @@ h_aspirate_words = [
 
 
 
-def highlight_pattern(word, pattern):
+import re
+import random
+
+# Lista de cores para destaque
+COLOR_LIST = [
+    'red', 'blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'brown',
+    'teal', 'maroon', 'navy', 'olive', 'lime', 'pink', 'gold', 'violet'
+]
+
+def highlight_all_patterns(word, pattern):
     """
-    Realça (destaca) o primeiro match do padrão `pattern` na `word` em vermelho.
-    Retorna a palavra com o trecho correspondente destacado em <span style="color:red">...</span>.
+    Realça (destaca) todas as ocorrências do padrão `pattern` na `word` com uma cor aleatória.
+    Retorna a palavra com os trechos correspondentes destacados em <span style="color:cor">...</span>.
     Se não houver match, retorna a palavra original.
     """
-    m = re.search(pattern, word)
-    if m:
-        start, end = m.start(), m.end()
-        # Destaca apenas o grupo que você quer realçar (por exemplo, o grupo 1)
-        # Caso o pattern tenha grupos, use m.group(1) ou outro grupo.
-        # Se quiser destacar exatamente o que o pattern casou, use m.group(0).
-        # Aqui assumimos que o padrão principal está no primeiro grupo de captura.
+    matches = list(re.finditer(pattern, word))
+    if not matches:
+        return word
+    
+    # Ordena os matches do final para o início para evitar problemas com índices ao substituir
+    matches = sorted(matches, key=lambda m: m.start(), reverse=True)
+    
+    highlighted_word = word
+    for m in matches:
         highlighted_part = m.group(1) if m.lastindex else m.group(0)
-        # Agora substitui apenas essa parte:
-        highlighted_word = (word[:m.start(1)] + '<span style="color:red">' + highlighted_part + '</span>' 
-                            + word[m.end(1):])
-        return highlighted_word  
-    return word
+        color = random.choice(COLOR_LIST)
+        if m.lastindex:
+            start, end = m.start(1), m.end(1)
+        else:
+            start, end = m.start(), m.end()
+        highlighted_word = (
+            highlighted_word[:start] +
+            f'<span style="color:{color}">' + highlighted_part + '</span>' +
+            highlighted_word[end:]
+        )
+    
+    return highlighted_word
 
 def get_pronunciation_hints(word):
+    """
+    Analisa a palavra em francês e retorna a palavra com trechos destacados
+    e explicações sobre a pronúncia de cada trecho.
+    
+    Retorna um dicionário com:
+        - 'word': palavra original
+        - 'highlighted_word': palavra com trechos destacados
+        - 'explanations': lista de explicações para cada destaque
+    """
     front_vowels = 'iéeèêëïyæœ'
     vowels = 'aeiouéêèëíóôúãõœæy'
     consonants = 'bcdfgjklmnpqrstvwxzʃʒɲŋçh'
@@ -203,7 +279,7 @@ def get_pronunciation_hints(word):
             start = len(word)-1
             end = len(word)
             matched_text = word[start:end]
-            expl = 'No artigo "le", o "e" é muito curto, parecido com "lu" rápido, não "lê". Ex: "le chat" → "lu chá".'
+            expl = 'No artigo "le", o "e" é muito curto, parecido com "luh" rápido, não "lê". Ex: "le chat" → "luh chá".'
             matches_found.append((start, end, matched_text, expl))
 
     if lower_word == 'les':
@@ -211,7 +287,7 @@ def get_pronunciation_hints(word):
             start = len(word)-2
             end = len(word)
             matched_text = word[start:end]
-            expl = 'No artigo "les", "{match}" soa como "lê", diferente de "le" (lu). Ex: "les chats" → "lê chá".'
+            expl = 'No artigo "les", soa como "lê", diferente de "le" (lu). Ex: "les chats" → "lê chá".'
             matches_found.append((start, end, matched_text, expl))
 
     if lower_word.endswith('chats'):
@@ -225,13 +301,6 @@ def get_pronunciation_hints(word):
             add_match_object(m, 'Na ligação (liaison), o "{match}" final soa como "t" antes de vogal. Ex: "grand arbre" → "gran_t arbre".')
 
     # Padrões genéricos sem AFI, usando comparações com o português:
-    # Nasais: descrever usando "ã", "ãn", "õ", "ẽ" etc.
-    # Vogais aproximadas: usar "é", "ê", "ô", "u" fechado, "iê" etc.
-    # "ch" como 'x' de 'xarope'
-    # "gn" como 'nh'
-    # "j/g(e,i)" como 'j' de "jogar"
-    # etc
-
     patterns = [
         (r'(am|em|an|en)(?=[bdfgjklpqrstvwxzʃʒɲŋç])', 
          "A sequência {match} indica um som nasal parecido com 'ãn'. Ex: 'en' ~ 'ãn'."),
@@ -245,10 +314,10 @@ def get_pronunciation_hints(word):
          "A sequência {match} é pronunciada aproximadamente como 'ô'."),
         (r'(oy)',
          "{match} soa como 'uai', semelhante ao mineiro 'uai'."),
-        (r'(x)(?=' + consonants + ')', 
-         '"{match}" antes de consoante soa como ' + '"ks"' + '.'),
+        (r'(x)(?=[' + consonants + '])', 
+         '"{match}" antes de consoante soa como "ks".'),
         (r'(y)(?=[' + vowels + '])', 
-         '"{match}" antes de vogal soa como o ' + '"i" deslizado, tipo "ia" → "iá"'),
+         '"{match}" antes de vogal soa como o "i" deslizado, tipo "ia" → "iá".'),
         (r'(c)(?=[' + front_vowels + '])', 
          '"{match}" antes de vogal frontal soa como "s".'),
         (r'(ch)', 
@@ -351,21 +420,21 @@ def get_pronunciation_hints(word):
     m = re.search(r'e' + consonants + '{2,}', word)
     if m:
         matched_text = m.group(0)
-        expl = 'Quando "e" é seguido de duas ou mais consoantes ({match}), tende a ficar mais fechado, soando quase como "é".'.format(match=matched_text)
+        expl = f'Quando "e" é seguido de duas ou mais consoantes ({matched_text}), tende a ficar mais fechado, soando quase como "é".'
         pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
     # ph
     if 'ph' in word:
         for m in re.finditer(r'(ph)', word):
             matched_text = m.group(0)
-            expl = '"{match}" soa como "f". Ex: "photo" → "fôto".'.format(match=matched_text)
+            expl = f'"{matched_text}" soa como "f". Ex: "photo" → "fôto".'
             pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
     # th
     if 'th' in word:
         for m in re.finditer(r'(th)', word):
             matched_text = m.group(0)
-            expl = '"{match}" costuma ser pronunciado como "t".'.format(match=matched_text)
+            expl = f'"{matched_text}" costuma ser pronunciado como "t".'
             pattern_matches.append((m.start(), m.end(), matched_text, expl))
 
     def overlaps_with_existing(start, end, existing_matches):
@@ -374,6 +443,7 @@ def get_pronunciation_hints(word):
                 return True
         return False
 
+    # Filtra matches que não se sobrepõem
     pattern_matches.sort(key=lambda x: x[0])
     final_matches = matches_found[:]
 
@@ -395,7 +465,11 @@ def get_pronunciation_hints(word):
     explanations = []
     for (start, end, matched_text, expl) in final_matches:
         result_str += word[prev_end:start]
-        result_str += f'<span style="color:red">{word[start:end]}</span>'
+        
+        # Seleciona uma cor aleatória para cada destaque
+        color = random.choice(COLOR_LIST)
+        
+        result_str += f'<span style="color:{color}">{word[start:end]}</span>'
         prev_end = end
         explanations.append(expl)
     result_str += word[prev_end:]
@@ -405,11 +479,6 @@ def get_pronunciation_hints(word):
         "highlighted_word": result_str,
         "explanations": explanations
     }
-
-
-
-
-
 
 
 
@@ -655,7 +724,7 @@ def transliterate_and_convert_sentence(sentence):
     # Dependendo de sua lógica, você pode retornar as duas versões:
     # Backend: com pontos
     # Usuário: sem pontos
-    print(frase_com_pontos)
+    #print(frase_com_pontos)
     return frase_usuario
 
   
