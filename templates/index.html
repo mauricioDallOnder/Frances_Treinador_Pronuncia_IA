@@ -424,50 +424,96 @@
       });
 
       function fetchPronunciation(text) {
-        fetch("/pronounce", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(text),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            const pronunciationHtml = data.pronunciations
-              .split(" ")
-              .map((word) => `<span class="word">${word}</span>`)
-              .join(" ");
-            document.getElementById("pronunciation").innerHTML =
-              pronunciationHtml;
-
-            // Após mostrar a pronúncia, buscar dicas
-            fetch("/hints", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: "text=" + encodeURIComponent(text),
-            })
-              .then((response) => response.json())
-              .then((hintsData) => {
-                const hintsList = document.getElementById("hintsList");
-                hintsList.innerHTML = "";
-
-                const hints = hintsData.hints || [];
-                if (hints.length > 0) {
-                  hints.forEach((hintItem) => {
-                    const li = document.createElement("li");
-                    // Aqui escolhemos usar 'highlighted_word' para mostrar com destaques:
-                    const explanationsStr = hintItem.explanations.join(" ");
-                    li.innerHTML = `<strong>${hintItem.highlighted_word}:</strong> ${explanationsStr}`;
-                    hintsList.appendChild(li);
-                  });
-                } else {
-                  hintsList.innerHTML = "<li>Nenhuma sugestão adicional.</li>";
-                }
-              });
-          });
+  fetch("/pronounce", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "text=" + encodeURIComponent(text),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        // Se o servidor retornar, por exemplo, 500 ou outro erro
+        throw new Error("Erro no servidor /pronounce: " + response.status);
       }
+      return response.json();
+    })
+    .then((data) => {
+      // Verifica se a resposta contém um campo "error"
+      if (data.error) {
+        console.error("Erro retornado pelo servidor /pronounce:", data.error);
+        // Aqui você pode exibir uma mensagem de erro na tela, se quiser
+        return; // Encerra a função, não prossegue
+      }
+
+      // Verifica se data.pronunciations existe
+      if (!data.pronunciations) {
+        console.warn("pronunciations não veio na resposta. data =", data);
+        return; // Encerra a função
+      }
+
+      // Agora sim podemos usar .split
+      const pronunciationHtml = data.pronunciations
+        .split(" ")
+        .map((word) => `<span class="word">${word}</span>`)
+        .join(" ");
+
+      document.getElementById("pronunciation").innerHTML = pronunciationHtml;
+
+      // Chama a próxima rota (hints)
+      return fetch("/hints", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "text=" + encodeURIComponent(text),
+      });
+    })
+    .then((response) => {
+      // Se não tiver response (porque retornamos lá em cima), encerra
+      if (!response) {
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Erro no servidor /hints: " + response.status);
+      }
+      return response.json();
+    })
+    .then((hintsData) => {
+      // Se não tiver hintsData, encerra
+      if (!hintsData) {
+        return;
+      }
+
+      if (hintsData.error) {
+        console.error("Erro retornado pelo servidor /hints:", hintsData.error);
+        // Você pode decidir exibir mensagem de erro, se quiser
+        return;
+      }
+
+      const hintsList = document.getElementById("hintsList");
+      hintsList.innerHTML = "";
+
+      const hints = hintsData.hints || [];
+      if (hints.length > 0) {
+        hints.forEach((hintItem) => {
+          const listItem = document.createElement("li");
+          // Usamos 'highlighted_word' para mostrar com destaques
+          const explanationsStr = hintItem.explanations.join(" ");
+          listItem.innerHTML = `<strong>${hintItem.highlighted_word}:</strong> ${explanationsStr}`;
+          hintsList.appendChild(listItem);
+        });
+      } else {
+        hintsList.innerHTML = "<li>Nenhuma sugestão adicional.</li>";
+      }
+    })
+    .catch((error) => {
+      // Tratar qualquer erro que ocorrer em /pronounce ou /hints
+      console.error("Erro na chamada /pronounce ou /hints:", error);
+      // Aqui também é possível exibir alguma mensagem ao usuário, se quiser
+    });
+}
+
 
       function uploadAudio() {
         let audioInput = document.getElementById("audio");

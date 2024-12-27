@@ -74,11 +74,15 @@ with open('dic.json', 'r', encoding='utf-8') as f:
     ipa_dictionary = json.load(f)
 
 # Mapeamento de fonemas francês para português com regras contextuais aprimoradas
+# Cada entrada deve ser um dicionário com, no mínimo, a chave 'default'.
+# Se houver contextos adicionais (ex.: 'before_front_vowel', 'word_initial', etc.),
+# mantenha também o 'default' para evitar KeyError.
+
 french_to_portuguese_phonemes = {
     # Vogais orais
     'i': {'default': 'i'},
     'e': {'default': 'e'},
-    'ɛ': {'default': 'é', 'before_nasal': 'ê'},
+    'ɛ': {'default': 'é', 'before_nasal': 'ê'},  # 'ê' se estiver antes de consoante nasal, por exemplo
     'a': {'default': 'a'},
     'ɑ': {'default': 'a'},
     'ɔ': {'default': 'ó'},
@@ -94,42 +98,59 @@ french_to_portuguese_phonemes = {
     'ɑ̃': {'default': 'ã'},
     'ɔ̃': {'default': 'õ'},
     'œ̃': {'default': 'ũn'},
-    'ð': {'default': 'on'},  # Adapte conforme necessário
+    'ð': {'default': 'on'},  # Ajuste conforme precisar
     
     # Semivogais
     'w': {'default': 'u'},
-    'ɥ': {'default': 'u', 'after_vowel': 'u'},  # Refinamento para contextos após vogais
-    'j': {'default': 'i', 'word_initial': 'i', 'after_consonant': 'i'},  # Adicionado como semivogal
+    'ɥ': {
+        'default': 'u',
+        'after_vowel': 'u'  # exemplo de refinamento para quando estiver após vogal
+    },
+    'j': {
+        'default': 'i',
+        'word_initial': 'i',
+        'after_consonant': 'i'
+    },
     
     # Consoantes
     'b': {'default': 'b'},
-    'd': {'default': 'd', 'before_i': 'dj'},
+    'd': {
+        'default': 'd',
+        'before_i': 'dj'
+    },
     'f': {'default': 'f'},
     'g': {
         'default': 'g',
-        'before_front_vowel': 'j',  # Ex: "gilet" -> "jilet"
+        'before_front_vowel': 'j',  # Ex.: "gilet" -> "jilet"
         'before_back_vowel': 'g'
     },
-    'ʒ': {'default': 'j', 'word_initial': 'j', 'after_nasal': 'j'},
-    'k': {'default': 'k', 'before_front_vowel': 'qu'},
+    'ʒ': {
+        'default': 'j',
+        'word_initial': 'j',
+        'after_nasal': 'j'
+    },
+    'k': {
+        'default': 'k',
+        'before_front_vowel': 'qu'  # Ex.: "qui" -> "ki"
+    },
     'l': {'default': 'l'},
     'm': {'default': 'm'},
     'n': {'default': 'n'},
     'p': {'default': 'p'},
     'ʁ': {
         'default': 'r',
-        'word_initial': 'h',
-        'after_vowel': 'rr',
+        'word_initial': 'h',   # Ex.: início de palavra
+        'after_vowel': 'rr',   # Ex.: "para"
         'after_consonant': 'r'
     },
     's': {
         'default': 's',
-        'between_vowels': 'z',
+        'between_vowels': 'z',  # Ex.: "rose" -> "roze"
         'word_final': 's'
     },
     't': {
         'default': 't',
-        'before_i': 'tch'
+        'before_i': 'tch'  # Ex.: "ti" -> "tchi"
     },
     'v': {'default': 'v'},
     'z': {'default': 'z'},
@@ -140,27 +161,29 @@ french_to_portuguese_phonemes = {
     'ŋ': {'default': 'ng'},
     'ç': {'default': 's'},
     'ʎ': {'default': 'lh'},
-    'ʔ': {'default': ''},  # Fonema glotal stop geralmente não tem equivalente em português
-    'θ': {'default': 't'},  # Adapte conforme necessário
+    'ʔ': {'default': ''},   # Glotal stop - normalmente omitimos
+    'θ': {'default': 't'},  # Ajuste se precisar
     'ɾ': {'default': 'r'},
-    'ʕ': {'default': 'r'},  # Adapte conforme necessário
+    'ʕ': {'default': 'r'},  # Ajuste se precisar
     
     # Fonemas compostos
-    'sj': {'default': 'ch'},  # Exemplo: "attention" -> "atenção"
-    'ks': {'default': 'x'},   # Exemplo: "exact" -> "exato"
-    'gz': {'default': 'gz'},  # Exemplo: "exagerer" -> "exagerar"
+    'sj': {'default': 'ch'},  # Ex.: "attention" -> "atenção"
+    'ks': {'default': 'x'},   # Ex.: "exact" -> "exato"
+    'gz': {'default': 'gz'},  # Ex.: "exagerer" -> "exagerar"
     
     # Outros fonemas
     'x': {'default': 'x'},
     
     # Regras adicionais de contexto
-    'ʃj': {'default': 'chj'},  # Exemplo: "chieur" -> "chieur"
-    'ʒʁ': {'default': 'jr'},   # Exemplo: "journal" -> "jornal"
+    'ʃj': {'default': 'chj'},  # Ex.: "chieur" -> "chieur"
+    'ʒʁ': {'default': 'jr'},   # Ex.: "journal" -> "jornal"
     
     # Tratamento do 'h' aspirado e mudo
+    # Para não gerar erro de KeyError ao chamar mapping['default'], inclua 'default'
     'h': {
-        'aspirated': 'h',  # Preservar o 'h' aspirado
-        'mute': ''          # Remover o 'h' mudo
+        'default': '',
+        'aspirated': 'h',
+        'mute': ''
     },
     
     # Regras para consoantes duplas em português
@@ -184,7 +207,6 @@ french_to_portuguese_phonemes = {
     'ʧ': {'default': 'tch'},
     'ʤ': {'default': 'dj'},
 }
-
 
 # Características fonéticas
 
@@ -681,25 +703,32 @@ def index():
 
 @app.route('/pronounce', methods=['POST'])
 def pronounce():
-    text = request.form['text']
-    # Certifique-se de que os apóstrofos estão corretos
-    text = text.replace("’", "'")
-    # Transliterar e converter a frase inteira
-    pronunciation = transliterate_and_convert_sentence(text)
-    return jsonify({'pronunciations': pronunciation})
+    try:
+        text = request.form['text']
+        # ... processa ...
+        pronunciation = transliterate_and_convert_sentence(text)
+        return jsonify({'pronunciations': pronunciation})
+    except Exception as e:
+        logger.exception("Erro em /pronounce")
+        return jsonify({'error': str(e)}), 500
 
+    
 @app.route('/hints', methods=['POST'])
 def hints():
-    text = request.form['text']
-    words = text.split()
-    hints_result = []
+    try:
+        text = request.form['text']
+        words = text.split()
+        hints_result = []
 
-    for w in words:
-        data = get_pronunciation_hints(w)
-        if data["explanations"]:
-            hints_result.append(data)
+        for w in words:
+            data = get_pronunciation_hints(w)
+            if data["explanations"]:
+                hints_result.append(data)
 
-    return jsonify({"hints": hints_result})
+        return jsonify({"hints": hints_result})
+    except Exception as e:
+        logger.exception(f"Erro em /hints: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/get_sentence', methods=['POST'])
@@ -729,109 +758,104 @@ def get_sentence():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    file = request.files.get('audio')
-    if not file:
-        return jsonify({"error": "Nenhum arquivo de áudio enviado."}), 400
-
-    # Limitar tamanho do arquivo (por exemplo, 10 MB)
-    max_size = 10 * 1024 * 1024  # 10 MB
-    file.seek(0, os.SEEK_END)
-    file_length = file.tell()
-    if file_length > max_size:
-        return jsonify({"error": "Arquivo de áudio muito grande. O limite é de 10 MB."}), 400
-    file.seek(0)
-
-    text = request.form.get('text')
-    if not text:
-        return jsonify({"error": "Texto de referência não fornecido."}), 400
-
-    category = request.form.get('category', 'random')
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-        tmp_file.write(file.read())
-        tmp_file_path = tmp_file.name
-
-    # Enviar para processamento assíncrono
-    future = executor.submit(process_audio, tmp_file_path)
+    """
+    Rota que recebe o áudio do usuário, processa e retorna o feedback em JSON.
+    """
     try:
-        transcription = future.result(timeout=120)  # Timeout de 120 segundos
-    except Exception as e:
-        logger.exception(f"Erro ao processar áudio: {e}")  # Log do erro
-        return jsonify({"error": "Erro ao processar o áudio."}), 500
+        file = request.files.get('audio')
+        if not file:
+            return jsonify({"error": "Nenhum arquivo de áudio enviado."}), 400
 
-    # Normalização e comparação de transcrições
-    normalized_transcription = normalize_text(transcription)
-    normalized_text = normalize_text(text)
-    words_estimated = normalized_transcription.split()
-    words_real = normalized_text.split()
+        # Verificação de tamanho
+        max_size = 10 * 1024 * 1024
+        file.seek(0, os.SEEK_END)
+        file_length = file.tell()
+        if file_length > max_size:
+            return jsonify({"error": "Arquivo de áudio muito grande."}), 400
+        file.seek(0)
 
-    # Alinhar as palavras usando o alinhamento otimizado
-    mapped_words, mapped_indices = WordMatching.get_best_mapped_words(words_estimated, words_real)
+        text = request.form.get('text')
+        if not text:
+            return jsonify({"error": "Texto de referência não fornecido."}), 400
 
-    # Calcular WER e acurácia
-    wer = calculate_wer(words_real, mapped_words)
-    accuracy = (1 - wer) * 100
+        category = request.form.get('category', 'random')
 
-    # Calcular acurácia de fonemas
-    phoneme_accuracy = calculate_phoneme_accuracy(words_real, mapped_words)
+        # Salva o arquivo temporário
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+            tmp_file.write(file.read())
+            tmp_file_path = tmp_file.name
 
-    print(f"WER: {wer}, Acurácia: {accuracy}, Acurácia de Fonemas: {phoneme_accuracy}")
+        # Processa o áudio de forma assíncrona
+        future = executor.submit(process_audio, tmp_file_path)
+        transcription = future.result(timeout=120)
 
-    # Inicialização de variáveis para feedback
-    diff_html = []
-    pronunciations = {}
-    feedback = {}
-    correct_count = 0
-    incorrect_count = 0
+        # Normalização e comparação
+        normalized_transcription = normalize_text(transcription)
+        normalized_text = normalize_text(text)
+        words_estimated = normalized_transcription.split()
+        words_real = normalized_text.split()
 
-    # Comparação palavra a palavra usando as palavras mapeadas
-    for idx, real_word in enumerate(words_real):
-        mapped_word = mapped_words[idx]
-        if mapped_word != '-':
-            correct_pronunciation = transliterate_and_convert_sentence(real_word)
-            user_pronunciation = transliterate_and_convert_sentence(mapped_word)
-            if compare_phonetics(correct_pronunciation, user_pronunciation):
-                diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
-                correct_count += 1
+        # Alinhamento e métricas
+        mapped_words, mapped_indices = WordMatching.get_best_mapped_words(words_estimated, words_real)
+        wer = calculate_wer(words_real, mapped_words)
+        accuracy = (1 - wer) * 100
+        phoneme_accuracy = calculate_phoneme_accuracy(words_real, mapped_words)
+
+        # Geração do diff_html e feedback
+        diff_html = []
+        pronunciations = {}
+        feedback = {}
+        correct_count = 0
+        incorrect_count = 0
+
+        for idx, real_word in enumerate(words_real):
+            mapped_word = mapped_words[idx]
+            if mapped_word != '-':
+                correct_pron = transliterate_and_convert_sentence(real_word)
+                user_pron = transliterate_and_convert_sentence(mapped_word)
+                if compare_phonetics(correct_pron, user_pron):
+                    diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                    correct_count += 1
+                else:
+                    diff_html.append(f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                    incorrect_count += 1
+                    feedback[real_word] = {
+                        'correct': correct_pron,
+                        'user': user_pron,
+                        'suggestion': f"Tente pronunciar '{real_word}' como '{correct_pron}'"
+                    }
+                pronunciations[real_word] = {
+                    'correct': correct_pron,
+                    'user': user_pron
+                }
             else:
-                diff_html.append(f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
                 incorrect_count += 1
                 feedback[real_word] = {
-                    'correct': correct_pronunciation,
-                    'user': user_pronunciation,
-                    'suggestion': f"Tente pronunciar '{real_word}' como '{correct_pronunciation}'"
+                    'correct': transliterate_and_convert_sentence(real_word),
+                    'user': '',
+                    'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert_sentence(real_word)}'"
                 }
-            pronunciations[real_word] = {
-                'correct': correct_pronunciation,
-                'user': user_pronunciation
-            }
-        else:
-            diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
-            incorrect_count += 1
-            feedback[real_word] = {
-                'correct': transliterate_and_convert_sentence(real_word),
-                'user': '',
-                'suggestion': f"Tente pronunciar '{real_word}' como '{transliterate_and_convert_sentence(real_word)}'"
-            }
-            pronunciations[real_word] = {
-                'correct': transliterate_and_convert_sentence(real_word),
-                'user': ''
-            }
+                pronunciations[real_word] = {
+                    'correct': transliterate_and_convert_sentence(real_word),
+                    'user': ''
+                }
 
-    diff_html = ' '.join(diff_html)
-    total_words = correct_count + incorrect_count
-    ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
-    completeness_score = (len(mapped_words) / len(words_real)) * 100 if len(words_real) > 0 else 0
+        diff_html = ' '.join(diff_html)
+        total_words = correct_count + incorrect_count
+        ratio = (correct_count / total_words) * 100 if total_words > 0 else 0
+        completeness_score = (len(mapped_words) / len(words_real)) * 100 if len(words_real) > 0 else 0
 
-    
-
-    return jsonify({
-        'ratio': f"{ratio:.2f}",
-        'diff_html': diff_html,
-        'pronunciations': pronunciations,
-        'feedback': feedback,
-        'completeness_score': f"{completeness_score:.2f}"
-    })
+        return jsonify({
+            'ratio': f"{ratio:.2f}",
+            'diff_html': diff_html,
+            'pronunciations': pronunciations,
+            'feedback': feedback,
+            'completeness_score': f"{completeness_score:.2f}"
+        })
+    except Exception as e:
+        logger.exception(f"Erro em /upload: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/speak', methods=['POST'])
 def speak():
@@ -871,6 +895,11 @@ def calculate_phoneme_accuracy(reference_words, hypothesis_words):
 
     return phoneme_accuracy
 
+if __name__ == '__main__':
+    app.run(debug=True)
+'''
+
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=3000))
+'''
