@@ -78,6 +78,10 @@ optgroup {
 option {
   padding: 4px;
 }
+.explica{
+  font-size: 14px !important;
+  font-weight: bold !important;
+}
 
 /* Responsividade para telas menores */
 @media (max-width: 767px) {

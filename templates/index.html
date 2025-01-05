@@ -33,155 +33,49 @@
             >
             <select class="form-select" id="category" name="category">
               <!-- Cuisine et transport -->
-              <optgroup label="transport">
+              <optgroup label="Pharses Metro-boulout-dôdo">
                 <option value="transport">transport</option>
-              </optgroup>
-              <!-- aeroport -->
-              <optgroup label="aeroport">
                 <option value="aeroport">transport</option>
-              </optgroup>
-              <!-- rue -->
-              <optgroup label="rue">
                 <option value="rue">rue</option>
-              </optgroup>
-              <!-- hotel -->
-              <optgroup label="hotel">
                 <option value="hotel">hotel</option>
-              </optgroup>
-              <!-- restaurant -->
-              <optgroup label="restaurant">
                 <option value="restaurant">restaurant</option>
-              </optgroup>
-              <!-- magasin -->
-              <optgroup label="magasin">
                 <option value="magasin">magasin</option>
-              </optgroup>
-              <!-- supermarche -->
-              <optgroup label="supermarche">
                 <option value="supermarche">supermarche</option>
-              </optgroup>
-              <!-- pharmacie -->
-              <optgroup label="pharmacie">
                 <option value="pharmacie">pharmacie</option>
-              </optgroup>
-              <!-- musee -->
-              <optgroup label="musee">
-                <option value="musee">musee</option>
-              </optgroup>
-              <!-- police -->
-              <optgroup label="police">
                 <option value="police">police</option>
+                <option value="musee">musee</option>
               </optgroup>
 
               <!-- Santé / Trinquer -->
-              <optgroup label="Santé / Trinquer">
+              <optgroup label="Expressions Courants">
                 <option value="sante_trinquer">Santé / Trinquer</option>
-              </optgroup>
-
-              <!-- Éternuer -->
-              <optgroup label="Éternuer">
                 <option value="eternuer">Éternuer</option>
-              </optgroup>
-
-              <!-- Bonne chance -->
-              <optgroup label="Bonne chance">
                 <option value="bonne_chance">Bonne chance</option>
-              </optgroup>
-
-              <!-- Félicitations -->
-              <optgroup label="Félicitations">
                 <option value="felicitations">Félicitations</option>
-              </optgroup>
-
-              <!-- Anniversaire -->
-              <optgroup label="Anniversaire">
                 <option value="anniversaire">Anniversaire</option>
-              </optgroup>
-
-              <!-- Bonne fête -->
-              <optgroup label="Bonne fête">
                 <option value="bonne_fete">Bonne fête</option>
-              </optgroup>
-
-              <!-- Bonne soirée -->
-              <optgroup label="Bonne soirée">
                 <option value="bonne_soiree">Bonne soirée</option>
-              </optgroup>
-
-              <!-- Voyage / Trajet -->
-              <optgroup label="Voyage / Trajet">
                 <option value="voyage_trajet">Voyage / Trajet</option>
-              </optgroup>
-
-              <!-- Bon appétit -->
-              <optgroup label="Bon appétit">
                 <option value="appetit">Bon appétit</option>
-              </optgroup>
-
-              <!-- Fêtes spécifiques -->
-              <optgroup label="Fêtes spécifiques">
                 <option value="fetes_specifiques">Fêtes spécifiques</option>
-              </optgroup>
-
-              <!-- Bonne année -->
-              <optgroup label="Bonne année">
                 <option value="bonne_annee">Bonne année</option>
-              </optgroup>
-
-              <!-- Bon rétablissement -->
-              <optgroup label="Bon rétablissement">
-                <option value="bon_retablissement">Bon rétablissement</option>
-              </optgroup>
-
-              <!-- Condoléances -->
-              <optgroup label="Condoléances">
                 <option value="condoleances">Condoléances</option>
-              </optgroup>
-
-              <!-- PROPOSER -->
-              <optgroup label="PROPOSER">
                 <option value="PROPOSER QUELQUE CHOSE">
                   PROPOSER QUELQUE CHOSE
                 </option>
-              </optgroup>
-
-              <!-- RÉPONDRE POSITIVEMENT -->
-              <optgroup label="RÉPONDRE POSITIVEMENT">
                 <option value="REPONDRE_POSITIVEMENT">
                   REPONDRE_POSITIVEMENT
                 </option>
-              </optgroup>
-
-              <!-- RÉPONDRE NÉGATIVEMENT -->
-              <optgroup label="RÉPONDRE NÉGATIVEMENT">
-                <option value="RÉPONDRE NÉGATIVEMENT">
+                <option value="REPONDRE_NÉGATIVEMENT">
                   RÉPONDRE NÉGATIVEMENT
                 </option>
-              </optgroup>
-
-              <!-- DEMANDER DES INFORMATIONS -->
-              <optgroup label="DEMANDER DES INFORMATIONS">
-                <option value="DEMANDER DES INFORMATIONS">
+                <option value="DEMANDER_DES_INFORMATIONS">
                   DEMANDER DES INFORMATIONS
                 </option>
-              </optgroup>
-
-              <!-- DEMANDER DE L’AIDE -->
-              <optgroup label="DEMANDER DE L’AIDE">
-                <option value="DEMANDER DE L’AIDE">DEMANDER DE L’AIDE</option>
-              </optgroup>
-
-              <!-- EXCUSES -->
-              <optgroup label="EXCUSES">
+                <option value="DEMANDER_DE_L’AIDE">DEMANDER DE L’AIDE</option>
                 <option value="EXCUSES">EXCUSES</option>
-              </optgroup>
-
-              <!-- REMERCIEMENTS -->
-              <optgroup label="REMERCIEMENTS">
                 <option value="REMERCIEMENTS">REMERCIEMENTS</option>
               </optgroup>
-
-              
 
               <!-- Grammaire -->
               <optgroup label="Grammaire">
@@ -493,7 +387,7 @@
                 const listItem = document.createElement("li");
                 // Usamos 'highlighted_word' para mostrar com destaques
                 const explanationsStr = hintItem.explanations.join(" ");
-                listItem.innerHTML = `<strong>${hintItem.highlighted_word}:</strong> ${explanationsStr}`;
+                listItem.innerHTML = `<strong classname='explica'>${hintItem.highlighted_word}:</strong> ${explanationsStr}</br>_______________________________________________________________________________________________</br>`;
                 hintsList.appendChild(listItem);
               });
             } else {
