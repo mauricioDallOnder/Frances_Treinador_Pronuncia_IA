@@ -211,17 +211,20 @@
             </button>
           </div>
 
+          <!-- Player de áudio fixo -->
+          <audio id="ttsAudio" controls></audio>
+
           <div class="pronunciation-feedback mt-4">
             <h3 class="form-label">Prononciation:</h3>
             <h3 id="pronunciation"></h3>
           </div>
 
           <div id="hintsContainer" class="mt-3">
-            <h4>Dicas de pronúnciation:</h4>
+            <h4>Dicas de prononciation:</h4>
             <ul id="hintsList"></ul>
           </div>
 
-          <!-- Elemento para exibir as mensagens de status -->
+          <!-- Mensagem de upload -->
           <div
             class="uploading-message mt-3"
             id="uploadingMessage"
@@ -238,23 +241,91 @@
 
           <div class="result mt-4">
             <h3>Feedback:</h3>
-            <p>Taux de réussite en prononciation: <span id="ratio"></span>%</p>
+            <p>Taux de réussite: <span id="ratio"></span>%</p>
             <div class="diff" id="diff"></div>
             <br />
             <p>Taux d’achèvement: <span id="completeness"></span>%</p>
           </div>
           <div id="audioContainer" class="mt-4"></div>
         </div>
+
         <div class="feedback-box" id="feedbackBox">
           <p id="feedbackContent">
-            Cliquez sur un mot pour voir sa prononciation.
+            Cliquez sur un mot pour voir sa prononciation comparée.
           </p>
         </div>
       </div>
     </div>
 
     <script>
-      // Função para escapar caracteres HTML
+
+       // Vamos guardar essas variáveis globalmente
+ 
+  let wordsForTiming = [];           // array de palavras "limpas"
+  let cumulativeCharCounts = [];     // soma cumulativa de caracteres
+  let totalChars = 0;                // total de caracteres (sem espaços/pontuação)
+  
+  // Função que prepara o "mapa" de caracteres para sincronização
+  function prepareCharMapping(rawText) {
+    // 1) Colocar tudo em minúsculo
+    let lowerText = rawText.toLowerCase();
+    // 2) Remover pontuação que não queremos
+    //    Aqui um regex simples que remove tudo que não for letra, número, apóstrofo ou espaço
+    let cleanText = lowerText.replace(/[^\p{L}\p{M}\d'\s-]/gu, ''); 
+    //    (use \p{L} e \p{M} para letras/unicode, se precisar de regex que suporte acentos)
+
+    // 3) Split em palavras
+    wordsForTiming = cleanText.split(/\s+/).filter(Boolean);
+
+    // 4) Calcular a contagem total de caracteres
+    totalChars = 0;
+    wordsForTiming.forEach((w) => {
+      totalChars += w.length;
+    });
+
+    // 5) Construir array cumulativo
+    cumulativeCharCounts = [];
+    let sumSoFar = 0;
+    for (let i = 0; i < wordsForTiming.length; i++) {
+      sumSoFar += wordsForTiming[i].length;
+      cumulativeCharCounts.push(sumSoFar);
+    }
+  }
+
+  // Função que, dada a wordIndex, calcula ~onde no áudio devemos ir
+  function goToWordCharBased(index) {
+    const audioElement = document.getElementById("ttsAudio");
+    if (!audioLoaded || isNaN(audioElement.duration) || audioElement.duration === Infinity) {
+      console.warn("Áudio não está pronto para seek!");
+      return;
+    }
+    if (index < 0 || index >= wordsForTiming.length) {
+      console.warn("Índice de palavra fora do range!");
+      return;
+    }
+    
+    const duration = audioElement.duration;
+    // Descobrimos quantos caracteres se passaram até a *início* dessa palavra
+    // Se index=0, então não avançamos nada
+    let charsBefore = index === 0 ? 0 : cumulativeCharCounts[index - 1];
+    if (totalChars <= 0) {
+      // Evitar divisão por zero
+      audioElement.currentTime = 0;
+    } else {
+      let ratio = charsBefore / totalChars;
+      audioElement.currentTime = ratio * duration;
+    }
+    audioElement.play();
+  }
+
+
+
+      let textWords = [];
+      let audioLoaded = false;
+
+      // Guardamos pronunciations retornadas pelo /upload, para exibir feedback
+      window.pronunciations = {};
+
       function escapeHtml(unsafe) {
         return unsafe
           .replace(/&/g, "&amp;")
@@ -268,30 +339,31 @@
         const categorySelect = document.getElementById("category");
         const options = categorySelect.options;
         const randomIndex = Math.floor(Math.random() * options.length);
-
-        // Define uma opção aleatória
         categorySelect.selectedIndex = randomIndex;
+
+        // Áudio
+        const ttsAudio = document.getElementById("ttsAudio");
+        ttsAudio.addEventListener("loadedmetadata", () => {
+          audioLoaded = true;
+          console.log("Áudio TTS carregado. Duração: ", ttsAudio.duration);
+        });
       });
 
-      // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
       function disableButtons() {
         document.getElementById("speakButton").disabled = true;
         document.getElementById("generateButton").disabled = true;
         document.getElementById("recordButton").disabled = true;
       }
-
       function enableButtons() {
         document.getElementById("speakButton").disabled = false;
         document.getElementById("generateButton").disabled = false;
         document.getElementById("recordButton").disabled = false;
       }
-
       function showMessage(message) {
         let statusMessage = document.getElementById("statusMessage");
         statusMessage.innerText = message;
         statusMessage.style.display = "block";
       }
-
       function hideMessage() {
         let statusMessage = document.getElementById("statusMessage");
         statusMessage.style.display = "none";
@@ -311,7 +383,6 @@
         })
           .then((response) => {
             if (!response.ok) {
-              // Se o servidor retornar, por exemplo, 500 ou outro erro
               throw new Error(
                 "Erro no servidor /pronounce: " + response.status
               );
@@ -319,32 +390,27 @@
             return response.json();
           })
           .then((data) => {
-            // Verifica se a resposta contém um campo "error"
             if (data.error) {
-              console.error(
-                "Erro retornado pelo servidor /pronounce:",
-                data.error
-              );
-              // Aqui você pode exibir uma mensagem de erro na tela, se quiser
-              return; // Encerra a função, não prossegue
+              console.error("Erro /pronounce:", data.error);
+              return;
             }
 
-            // Verifica se data.pronunciations existe
             if (!data.pronunciations) {
-              console.warn("pronunciations não veio na resposta. data =", data);
-              return; // Encerra a função
+              console.warn("pronunciations não veio na resposta:", data);
+              return;
             }
+            prepareCharMapping(text);
+            const splitted = data.pronunciations.split(/\s+/);
+            textWords = splitted;
 
-            // Agora sim podemos usar .split
-            const pronunciationHtml = data.pronunciations
-              .split(" ")
-              .map((word) => `<span class="word">${word}</span>`)
+            const pronunciationHtml = splitted
+              .map((w) => `<span class="word">${escapeHtml(w)}</span>`)
               .join(" ");
 
             document.getElementById("pronunciation").innerHTML =
               pronunciationHtml;
 
-            // Chama a próxima rota (hints)
+            // Agora busca "hints"
             return fetch("/hints", {
               method: "POST",
               headers: {
@@ -354,27 +420,16 @@
             });
           })
           .then((response) => {
-            // Se não tiver response (porque retornamos lá em cima), encerra
-            if (!response) {
-              return;
-            }
+            if (!response) return;
             if (!response.ok) {
               throw new Error("Erro no servidor /hints: " + response.status);
             }
             return response.json();
           })
           .then((hintsData) => {
-            // Se não tiver hintsData, encerra
-            if (!hintsData) {
-              return;
-            }
-
+            if (!hintsData) return;
             if (hintsData.error) {
-              console.error(
-                "Erro retornado pelo servidor /hints:",
-                hintsData.error
-              );
-              // Você pode decidir exibir mensagem de erro, se quiser
+              console.error("Erro /hints:", hintsData.error);
               return;
             }
 
@@ -385,22 +440,118 @@
             if (hints.length > 0) {
               hints.forEach((hintItem) => {
                 const listItem = document.createElement("li");
-                // Usamos 'highlighted_word' para mostrar com destaques
                 const explanationsStr = hintItem.explanations.join(" ");
-                listItem.innerHTML = `<strong classname='explica'>${hintItem.highlighted_word}:</strong> ${explanationsStr}</br>_______________________________________________________________________________________________</br>`;
+                listItem.innerHTML = `<strong>${hintItem.highlighted_word}:</strong> ${explanationsStr}<hr>`;
                 hintsList.appendChild(listItem);
               });
             } else {
-              hintsList.innerHTML = "<li>Nenhuma sugestão adicional.</li>";
+              hintsList.innerHTML = "<li>Aucune suggestion supplémentaire.</li>";
             }
           })
           .catch((error) => {
-            // Tratar qualquer erro que ocorrer em /pronounce ou /hints
-            console.error("Erro na chamada /pronounce ou /hints:", error);
-            // Aqui também é possível exibir alguma mensagem ao usuário, se quiser
+            console.error("Erro /pronounce ou /hints:", error);
           });
       }
 
+      function speakText() {
+        const text = document.getElementById("text").value;
+        disableButtons();
+        showMessage("Lecture du texte en cours...");
+
+        fetch("/speak", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "text=" + encodeURIComponent(text),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Erro no servidor /speak: " + response.status);
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            let url = URL.createObjectURL(blob);
+            let audioElement = document.getElementById("ttsAudio");
+            audioElement.src = url;
+
+            audioElement.play();
+            audioElement.onended = function () {
+              enableButtons();
+              hideMessage();
+            };
+          })
+          .catch((error) => {
+            console.error("Erro no TTS:", error);
+            enableButtons();
+            hideMessage();
+          });
+      }
+
+      // Ao clicar numa palavra no "pronunciation" ou no "diff"
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("word")) {
+          const clickedWord = event.target.innerText;
+          // Descobrir índice dessa span
+          const parent = event.target.parentNode; // p.ex. #pronunciation ou #diff
+          let spans = parent.querySelectorAll(".word");
+          spans = Array.from(spans);
+          const wordIndex = spans.indexOf(event.target);
+
+          // Mostra pronúncia no feedback
+          showPronunciation(clickedWord);
+          // Avança no áudio
+          goToWordCharBased(wordIndex);
+        }
+      });
+
+      // Avançar no áudio para a "wordIndex"
+      function goToWord(wordIndex) {
+        const audioElement = document.getElementById("ttsAudio");
+        const duration = audioElement.duration;
+        if (!audioLoaded || isNaN(duration) || duration === Infinity) {
+          console.warn("Áudio não está pronto para seek!");
+          return;
+        }
+        let totalWords = textWords.length;
+        if (totalWords < 1) return;
+        let timePerWord = duration / totalWords;
+        let seekTime = timePerWord * wordIndex;
+        if (seekTime >= duration) {
+          seekTime = duration - 0.1;
+        }
+        audioElement.currentTime = seekTime;
+        audioElement.play();
+      }
+
+      // Mostra no feedbackBox a pronúncia correta e a do usuário
+      function showPronunciation(word) {
+        // Precisamos do window.pronunciations (retornado por /upload)
+        let p = window.pronunciations[word];
+        if (!p) {
+          // Pode ser que ainda não tenha feedback para essa palavra
+          document.getElementById("feedbackContent").innerHTML = `
+            <strong>Mot cliqué:</strong> ${escapeHtml(word)}<br>
+            Aucune information de prononciation.<br>
+          `;
+          return;
+        }
+
+        let correct = p.correct || "";
+        let user = p.user || "";
+
+        document.getElementById("feedbackContent").innerHTML = `
+          <h1>FeedBack:<h1/>
+          <strong>Mot:</strong> ${escapeHtml(word)}<br>
+          <strong>Prononciation correcte:</strong> ${escapeHtml(correct)}<br>
+          <strong>Votre prononciation:</strong> ${
+            user ? escapeHtml(user) : "<em>(não pronunciou)</em>"
+          }
+        `;
+      }
+
+      // Função para enviar gravação ou regravação
       function uploadAudio() {
         let audioInput = document.getElementById("audio");
         let textInput = document.getElementById("text");
@@ -414,95 +565,15 @@
         })
           .then((response) => response.json())
           .then((data) => {
-            document.getElementById("ratio").innerText = data.ratio;
+            document.getElementById("ratio").innerText = data.ratio || "";
             document.getElementById("completeness").innerText =
-              data.completeness_score;
-            document.getElementById("diff").innerHTML = data.diff_html;
-            window.pronunciations = data.pronunciations;
-          });
-      }
-
-      function showPronunciation(word) {
-        let pronunciation = window.pronunciations[word];
-        if (pronunciation) {
-          document.getElementById("feedbackContent").innerHTML = `
-            <strong>Mot:</strong> ${escapeHtml(word)}<br>
-            <strong>Prononciation correct:</strong> ${escapeHtml(
-              pronunciation.correct
-            )}<br>
-            <strong>Votre Prononciation:</strong> ${escapeHtml(
-              pronunciation.user || "N/A"
-            )}
-            <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(
-              word
-            )}')">Écouter la prononciation</button> 
-        `;
-
-          // Corrigindo o atributo onclick (mantendo a correção anterior):
-          const speakButton = document.querySelector(
-            "#feedbackContent .btn-speak"
-          );
-          speakButton.setAttribute(
-            "onclick",
-            `speakWord('${escapeHtml(word)}')`
-          );
-        }
-      }
-
-      function speakWord(word) {
-        // Decodificar entidades HTML antes de enviar para o TTS
-        const decodedWord = htmlDecode(word);
-
-        fetch("/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(decodedWord), // Enviar a palavra decodificada
-        })
-          .then((response) => response.blob())
-          .then((blob) => {
-            let url = URL.createObjectURL(blob);
-            let audio = new Audio(url);
-            audio.play();
-          });
-      }
-
-      // Função para decodificar entidades HTML
-      function htmlDecode(input) {
-        var doc = new DOMParser().parseFromString(input, "text/html");
-        return doc.documentElement.textContent;
-      }
-
-      function speakText() {
-        let text = document.getElementById("text").value;
-        disableButtons();
-        showMessage("Lecture du texte en cours...");
-
-        fetch("/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(text),
-        })
-          .then((response) => response.blob())
-          .then((blob) => {
-            let url = URL.createObjectURL(blob);
-            let audio = new Audio(url);
-            audio.play();
-
-            // Reabilitar os botões quando o áudio terminar de tocar
-            audio.onended = function () {
-              enableButtons();
-              hideMessage();
-            };
+              data.completeness_score || "";
+            document.getElementById("diff").innerHTML = data.diff_html || "";
+            // Armazena pronunciations e feedback
+            window.pronunciations = data.pronunciations || {};
           })
           .catch((error) => {
-            console.error("Erreur:", error);
-            alert("Une erreur est survenue lors de la lecture du texte.");
-            enableButtons();
-            hideMessage();
+            console.error("Erro no /upload:", error);
           });
       }
 
@@ -535,7 +606,6 @@
           .getUserMedia({ audio: true })
           .then((stream) => {
             mediaRecorder = new MediaRecorder(stream, options);
-
             mediaRecorder.onstop = (event) => {
               const blob = new Blob(recordedBlobs, { type: "audio/webm" });
               const url = window.URL.createObjectURL(blob);
@@ -545,6 +615,7 @@
               audio.controls = true;
               audio.src = url;
               audioContainer.appendChild(audio);
+
               uploadRecording(blob);
             };
 
@@ -560,10 +631,8 @@
             isRecording = true;
           })
           .catch((error) => {
-            console.error("Erreur lors de l'accès au microphone:", error);
-            alert(
-              "Erreur lors de l'accès au microphone. Veuillez vérifier les permissions."
-            );
+            console.error("Erreur micro:", error);
+            alert("Erreur micro. Permissions?");
           });
       }
 
@@ -584,7 +653,11 @@
             let formData = new FormData();
             formData.append("audio", wavBlob, "recording.wav");
             formData.append("text", textInput.value);
-            formData.append("category", textInput.dataset.category || "random"); // Inclui a categoria
+            formData.append(
+              "category",
+              textInput.dataset.category || "random"
+            );
+
             let xhr = new XMLHttpRequest();
             xhr.open("POST", "/upload", true);
 
@@ -593,9 +666,7 @@
                 let percentComplete = (e.loaded / e.total) * 100;
                 document.getElementById("uploadProgress").value =
                   percentComplete;
-                document.getElementById(
-                  "uploadingText"
-                ).innerText = `Envoi de l’audio... ${Math.round(
+                document.getElementById("uploadingText").innerText = `Envoi de l’audio... ${Math.round(
                   percentComplete
                 )}% terminé.`;
               }
@@ -608,7 +679,8 @@
                 document.getElementById("completeness").innerText =
                   data.completeness_score;
                 document.getElementById("diff").innerHTML = data.diff_html;
-                window.pronunciations = data.pronunciations;
+                window.pronunciations = data.pronunciations || {};
+
                 document.getElementById("uploadingMessage").style.display =
                   "none";
                 document.getElementById("recordButton").disabled = false;
@@ -626,7 +698,7 @@
           .catch((error) => {
             document.getElementById("uploadingMessage").style.display = "none";
             document.getElementById("recordButton").disabled = false;
-            alert("Erro ao enviar o áudio. Por favor, tente novamente.");
+            alert("Erro ao enviar o áudio.");
           });
       }
 
@@ -648,10 +720,7 @@
           const wavBuffer = audioBufferToWav(audioBuffer);
           return new Blob([wavBuffer], { type: "audio/wav" });
         } catch (error) {
-          console.error("Erro na conversão do áudio para WAV:", error);
-          alert(
-            "Houve um problema ao processar o áudio. Por favor, tente novamente."
-          );
+          console.error("Erro conversão WAV:", error);
           throw error;
         }
       }
@@ -663,38 +732,41 @@
           view = new DataView(bufferArr),
           channels = [],
           sampleRate = buffer.sampleRate;
-        let offset = 0,
-          pos = 0;
+        let pos = 0;
 
         function setUint16(data) {
           view.setUint16(pos, data, true);
           pos += 2;
         }
-
         function setUint32(data) {
           view.setUint32(pos, data, true);
           pos += 4;
         }
 
+        // RIFF chunk
         setUint32(0x46464952); // "RIFF"
         setUint32(length - 8); // file length - 8
         setUint32(0x45564157); // "WAVE"
 
-        setUint32(0x20746d66); // "fmt " chunk
-        setUint32(16); // length of fmt chunk
-        setUint16(1); // PCM
+        // fmt chunk
+        setUint32(0x20746d66); // "fmt "
+        setUint32(16); // subchunk size
+        setUint16(1); // audio format (1 = PCM)
         setUint16(numOfChan);
         setUint32(sampleRate);
         setUint32(sampleRate * 2 * numOfChan);
         setUint16(numOfChan * 2);
         setUint16(16);
 
-        setUint32(0x61746164); // "data" chunk
-        setUint32(length - pos - 4); // data length
+        // data chunk
+        setUint32(0x61746164); // "data"
+        setUint32(length - pos - 4);
 
-        for (let i = 0; i < buffer.numberOfChannels; i++)
+        for (let i = 0; i < numOfChan; i++) {
           channels.push(buffer.getChannelData(i));
+        }
 
+        let offset = 0;
         while (pos < length) {
           for (let i = 0; i < numOfChan; i++) {
             const sample = Math.max(-1, Math.min(1, channels[i][offset]));
@@ -707,15 +779,13 @@
           }
           offset++;
         }
-
         return bufferArr;
       }
 
-      // Função para gerar uma frase
       function generateSentence() {
         let category = document.getElementById("category").value;
         disableButtons();
-        showMessage("Génération de la phrase en cours...");
+        showMessage("Génération de la phrase...");
 
         fetch("/get_sentence", {
           method: "POST",
@@ -726,7 +796,7 @@
         })
           .then((response) => {
             if (!response.ok) {
-              throw new Error("Erreur dans la réponse de l'API");
+              throw new Error("Erro na resposta /get_sentence");
             }
             return response.json();
           })
@@ -737,26 +807,18 @@
               document.getElementById("text").value = data.fr_sentence;
               document.getElementById("text").dataset.category = data.category;
               fetchPronunciation(data.fr_sentence);
+              prepareCharMapping(data.fr_sentence);
             }
           })
           .catch((error) => {
             console.error("Erreur:", error);
-            alert(
-              "Une erreur est survenue lors de la génération de la phrase."
-            );
+            alert("Une erreur est survenue.");
           })
           .finally(() => {
             enableButtons();
             hideMessage();
           });
       }
-
-      // Adicionar event listener para clicar nas palavras de pronúncia
-      document.addEventListener("click", function (event) {
-        if (event.target.classList.contains("word")) {
-          showPronunciation(event.target.innerText);
-        }
-      });
     </script>
   </body>
 </html>

@@ -620,17 +620,10 @@ def normalize_text(text):
 def remove_punctuation_end(sentence):
       return sentence.rstrip('.')
 
-# Funções para comparação fonética e Processamento de áudio -------------------------------------------------------
-def compare_phonetics(phonetic1, phonetic2, threshold=0.8):
-    # Usar distância de edição normalizada para comparação
-    distance = WordMetrics.edit_distance_python(phonetic1, phonetic2)
-    max_len = max(len(phonetic1), len(phonetic2))
-    similarity = 1 - (distance / max_len)
-    return similarity >= threshold
-
+# --------------------------------------------------------------------------------------------
+# Funções de áudio e ASR ---------------------------------------------------------------------
 def remove_silence(waveform, sample_rate, threshold=0.01):
-    # Remove silêncios no início e no final do áudio
-    waveform = waveform.squeeze(0)  # Remove a dimensão do canal se existir
+    waveform = waveform.squeeze(0)
     energy = waveform.abs()
     mask = energy > threshold
     if mask.any():
@@ -638,9 +631,9 @@ def remove_silence(waveform, sample_rate, threshold=0.01):
         start = indices[0].item()
         end = indices[-1].item()
         trimmed_waveform = waveform[start:end+1]
-        return trimmed_waveform.unsqueeze(0)  # Adiciona de volta a dimensão do canal
+        return trimmed_waveform.unsqueeze(0)
     else:
-        return waveform.unsqueeze(0)  # Retorna o waveform original com dimensão do canal
+        return waveform.unsqueeze(0)
 
 def reduce_noise(waveform, sample_rate):
     try:
@@ -648,7 +641,7 @@ def reduce_noise(waveform, sample_rate):
         return reduced_waveform
     except Exception as e:
         logger.error(f"Erro na redução de ruído: {e}")
-        return waveform  # Retorna o waveform original em caso de erro
+        return waveform
 
 def normalize_waveform(waveform):
     rms = waveform.pow(2).mean().sqrt()
@@ -664,29 +657,20 @@ def resample_waveform(waveform, orig_sr, target_sr=16000):
 
 def process_audio(file_path):
     try:
-        # Carregar o áudio
         waveform, sample_rate = torchaudio.load(file_path)
-        # Converter para mono se necessário
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
-        # Remover silêncios
         waveform = remove_silence(waveform, sample_rate)
-        # Resamplear para 16000 Hz
         waveform = resample_waveform(waveform, sample_rate, target_sr=16000)
-        sample_rate = 16000  # Atualizar o sample_rate após resamplear
-        # Redução de ruído
+        sample_rate = 16000
         waveform_np = waveform.squeeze().numpy()
         waveform_np = reduce_noise(waveform_np, sample_rate)
-        # Converter de volta para tensor
         waveform = torch.tensor(waveform_np, dtype=torch.float32).unsqueeze(0)
-        # Normalização
         waveform = normalize_waveform(waveform)
-        # Processamento pelo modelo ASR
         inputs = processor_asr(waveform.squeeze(0), sampling_rate=sample_rate, return_tensors="pt")
         with torch.no_grad():
             logits = model_asr(inputs.input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
-        # Decodificação correta
         transcription = processor_asr.decode(predicted_ids[0], skip_special_tokens=True)
         return transcription
     except Exception as e:
@@ -695,8 +679,44 @@ def process_audio(file_path):
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
-#---------------------------------------------------------------------------------
-# Rotas de API -------------------
+
+# --------------------------------------------------------------------------------------------
+# Funções auxiliares de WER e comparação -----------------------------------------------------
+def compare_phonetics(phonetic1, phonetic2, threshold=0.8):
+    distance = WordMetrics.edit_distance_python(phonetic1, phonetic2)
+    max_len = max(len(phonetic1), len(phonetic2))
+    similarity = 1 - (distance / max_len)
+    return similarity >= threshold
+
+def calculate_wer(reference, hypothesis):
+    distance = WordMetrics.edit_distance_python(reference, hypothesis)
+    wer = distance / len(reference) if len(reference) > 0 else 0
+    return wer
+
+def calculate_phoneme_accuracy(reference_words, hypothesis_words):
+    total_phonemes = 0
+    total_distance = 0
+
+    for ref_word, hyp_word in zip(reference_words, hypothesis_words):
+        ref_pronunciation = transliterate_and_convert_sentence(ref_word)
+        hyp_pronunciation = transliterate_and_convert_sentence(hyp_word)
+
+        ref_phonemes = list(ref_pronunciation)
+        hyp_phonemes = list(hyp_pronunciation)
+
+        total_phonemes += len(ref_phonemes)
+        distance = WordMetrics.edit_distance_python(ref_phonemes, hyp_phonemes)
+        total_distance += distance
+
+    if total_phonemes > 0:
+        phoneme_accuracy = ((total_phonemes - total_distance) / total_phonemes) * 100
+    else:
+        phoneme_accuracy = 0
+
+    return phoneme_accuracy
+
+# --------------------------------------------------------------------------------------------
+# Rotas da aplicação -------------------------------------------------------------------------
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -705,14 +725,12 @@ def index():
 def pronounce():
     try:
         text = request.form['text']
-        # ... processa ...
         pronunciation = transliterate_and_convert_sentence(text)
         return jsonify({'pronunciations': pronunciation})
     except Exception as e:
         logger.exception("Erro em /pronounce")
         return jsonify({'error': str(e)}), 500
 
-    
 @app.route('/hints', methods=['POST'])
 def hints():
     try:
@@ -729,7 +747,6 @@ def hints():
     except Exception as e:
         logger.exception(f"Erro em /hints: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/get_sentence', methods=['POST'])
 def get_sentence():
@@ -751,7 +768,6 @@ def get_sentence():
                 return jsonify({"error": "Categoria não encontrada."}), 400
 
         return jsonify({'fr_sentence': sentence_text, 'category': category})
-
     except Exception as e:
         logger.error(f"Erro no endpoint /get_sentence: {e}")
         return jsonify({"error": "Erro interno no servidor."}), 500
@@ -759,14 +775,13 @@ def get_sentence():
 @app.route('/upload', methods=['POST'])
 def upload():
     """
-    Rota que recebe o áudio do usuário, processa e retorna o feedback em JSON.
+    Recebe áudio do usuário, processa (ASR) e retorna feedback + pronunciations.
     """
     try:
         file = request.files.get('audio')
         if not file:
             return jsonify({"error": "Nenhum arquivo de áudio enviado."}), 400
 
-        # Verificação de tamanho
         max_size = 10 * 1024 * 1024
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
@@ -780,28 +795,26 @@ def upload():
 
         category = request.form.get('category', 'random')
 
-        # Salva o arquivo temporário
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
             tmp_file.write(file.read())
             tmp_file_path = tmp_file.name
 
-        # Processa o áudio de forma assíncrona
+        # Processa áudio com ASR
         future = executor.submit(process_audio, tmp_file_path)
         transcription = future.result(timeout=120)
 
-        # Normalização e comparação
+        # Normaliza
         normalized_transcription = normalize_text(transcription)
         normalized_text = normalize_text(text)
         words_estimated = normalized_transcription.split()
         words_real = normalized_text.split()
 
-        # Alinhamento e métricas
+        # Alinhamento de palavras
         mapped_words, mapped_indices = WordMatching.get_best_mapped_words(words_estimated, words_real)
         wer = calculate_wer(words_real, mapped_words)
         accuracy = (1 - wer) * 100
         phoneme_accuracy = calculate_phoneme_accuracy(words_real, mapped_words)
 
-        # Geração do diff_html e feedback
         diff_html = []
         pronunciations = {}
         feedback = {}
@@ -813,11 +826,16 @@ def upload():
             if mapped_word != '-':
                 correct_pron = transliterate_and_convert_sentence(real_word)
                 user_pron = transliterate_and_convert_sentence(mapped_word)
+
                 if compare_phonetics(correct_pron, user_pron):
-                    diff_html.append(f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                    diff_html.append(
+                        f'<span class="word correct" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>'
+                    )
                     correct_count += 1
                 else:
-                    diff_html.append(f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                    diff_html.append(
+                        f'<span class="word incorrect" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>'
+                    )
                     incorrect_count += 1
                     feedback[real_word] = {
                         'correct': correct_pron,
@@ -829,7 +847,10 @@ def upload():
                     'user': user_pron
                 }
             else:
-                diff_html.append(f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>')
+                # Palavra não pronunciada
+                diff_html.append(
+                    f'<span class="word missing" onclick="showPronunciation(\'{real_word}\')">{real_word}</span>'
+                )
                 incorrect_count += 1
                 feedback[real_word] = {
                     'correct': transliterate_and_convert_sentence(real_word),
@@ -859,47 +880,14 @@ def upload():
 
 @app.route('/speak', methods=['POST'])
 def speak():
+    """
+    Gera o TTS (gTTS) do texto fornecido e retorna o áudio como MP3
+    """
     text = request.form['text']
     tts = gTTS(text=text, lang='fr')
     file_path = tempfile.mktemp(suffix=".mp3")
     tts.save(file_path)
-    return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
+    return send_file(file_path, mimetype='audio/mp3', as_attachment=False)
 
-# Funções adicionais necessárias ---------------------
-# Função para calcular WER
-def calculate_wer(reference, hypothesis):
-    # Usar edit distance para calcular WER
-    distance = WordMetrics.edit_distance_python(reference, hypothesis)
-    wer = distance / len(reference) if len(reference) > 0 else 0
-    return wer
-
-def calculate_phoneme_accuracy(reference_words, hypothesis_words):
-    total_phonemes = 0
-    total_distance = 0
-
-    for ref_word, hyp_word in zip(reference_words, hypothesis_words):
-        ref_pronunciation = transliterate_and_convert_sentence(ref_word)
-        hyp_pronunciation = transliterate_and_convert_sentence(hyp_word)
-
-        ref_phonemes = list(ref_pronunciation)
-        hyp_phonemes = list(hyp_pronunciation)
-
-        total_phonemes += len(ref_phonemes)
-        distance = WordMetrics.edit_distance_python(ref_phonemes, hyp_phonemes)
-        total_distance += distance
-
-    if total_phonemes > 0:
-        phoneme_accuracy = ((total_phonemes - total_distance) / total_phonemes) * 100
-    else:
-        phoneme_accuracy = 0
-
-    return phoneme_accuracy
-
-if __name__ == '__main__':
-    app.run(debug=True)
-'''
-
-# Inicialização e execução do aplicativo
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=3000))
-'''
