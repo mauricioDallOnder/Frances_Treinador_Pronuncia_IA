@@ -23,7 +23,7 @@ import WordMatching
 import WordMetrics
 import re
 import random
-
+import webrtcvad
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Configuração do logger
@@ -460,10 +460,7 @@ def transliterate_and_convert_sentence(sentence):
     # Gerar versão para o usuário
     frase_usuario = gerar_versao_usuario(frase_com_pontos)
 
-    # Dependendo de sua lógica, você pode retornar as duas versões:
-    # Backend: com pontos
-    # Usuário: sem pontos
-    #print(frase_com_pontos)
+   
     return frase_usuario
 
   
@@ -628,67 +625,93 @@ def compare_phonetics(phonetic1, phonetic2, threshold=0.8):
     similarity = 1 - (distance / max_len)
     return similarity >= threshold
 
-def remove_silence(waveform, sample_rate, threshold=0.01):
-    # Remove silêncios no início e no final do áudio
-    waveform = waveform.squeeze(0)  # Remove a dimensão do canal se existir
-    energy = waveform.abs()
-    mask = energy > threshold
-    if mask.any():
-        indices = torch.nonzero(mask).squeeze()
-        start = indices[0].item()
-        end = indices[-1].item()
-        trimmed_waveform = waveform[start:end+1]
-        return trimmed_waveform.unsqueeze(0)  # Adiciona de volta a dimensão do canal
-    else:
-        return waveform.unsqueeze(0)  # Retorna o waveform original com dimensão do canal
+def apply_vad(waveform: torch.Tensor, sample_rate: int, frame_ms: int = 30) -> torch.Tensor:
+    """
+    Aplica WebRTC VAD para remover partes sem fala no áudio.
+    """
+    vad = webrtcvad.Vad()
+    vad.set_mode(3)  # 0 a 3, quanto maior, mais sensível
 
-def reduce_noise(waveform, sample_rate):
-    try:
-        reduced_waveform = nr.reduce_noise(y=waveform, sr=sample_rate, prop_decrease=0.5, stationary=False)
-        return reduced_waveform
-    except Exception as e:
-        logger.error(f"Erro na redução de ruído: {e}")
-        return waveform  # Retorna o waveform original em caso de erro
+    # Convertendo para PCM 16-bit
+    int16_wf = (waveform.squeeze() * 32767).numpy().astype('int16')
+    bytes_wav = int16_wf.tobytes()
 
-def normalize_waveform(waveform):
-    rms = waveform.pow(2).mean().sqrt()
+    num_samples_per_frame = int(sample_rate * frame_ms / 1000)
+    frames = [
+        bytes_wav[i : i + num_samples_per_frame * 2]
+        for i in range(0, len(bytes_wav), num_samples_per_frame * 2)
+    ]
+
+    voiced_frames = []
+    for f in frames:
+        if len(f) < num_samples_per_frame * 2:
+            break
+        # Checa se é fala
+        if vad.is_speech(f, sample_rate):
+            voiced_frames.append(f)
+
+    import numpy as np
+    combined = b"".join(voiced_frames)
+    voiced_int16 = np.frombuffer(combined, dtype=np.int16)
+    if len(voiced_int16) == 0:
+        # Se não detectou nada, retorna original
+        return waveform
+
+    # Converte de volta para float tensor
+    voiced_float32 = voiced_int16.astype('float32') / 32767
+    return torch.from_numpy(voiced_float32).unsqueeze(0)
+
+
+def remove_noise_and_normalize(waveform: torch.Tensor, sr: int) -> torch.Tensor:
+    """
+    Remove ruído (noisereduce) e normaliza RMS
+    """
+    waveform_np = waveform.squeeze().numpy()
+    # Redução de ruído
+    reduced = nr.reduce_noise(y=waveform_np, sr=sr, prop_decrease=0.8)
+    wf_clean = torch.tensor(reduced, dtype=torch.float32).unsqueeze(0)
+
+    # Normalização RMS
+    rms = wf_clean.pow(2).mean().sqrt()
     if rms > 0:
-        return waveform / rms
-    return waveform
+        wf_clean = wf_clean / rms
+    return wf_clean
 
-def resample_waveform(waveform, orig_sr, target_sr=16000):
+def resample_waveform(waveform: torch.Tensor, orig_sr: int, target_sr=16000) -> torch.Tensor:
     if orig_sr != target_sr:
         resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=target_sr)
         waveform = resampler(waveform)
     return waveform
 
-def process_audio(file_path):
+def process_audio(file_path: str) -> str:
+    """
+    Pipeline: Carregar -> Mono -> Resample(16k) -> VAD -> NoiseReduce+Normalize -> ASR -> transcrição
+    """
     try:
-        # Carregar o áudio
         waveform, sample_rate = torchaudio.load(file_path)
-        # Converter para mono se necessário
+
+        # Mono
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
-        # Remover silêncios
-        waveform = remove_silence(waveform, sample_rate)
-        # Resamplear para 16000 Hz
-        waveform = resample_waveform(waveform, sample_rate, target_sr=16000)
-        sample_rate = 16000  # Atualizar o sample_rate após resamplear
-        # Redução de ruído
-        waveform_np = waveform.squeeze().numpy()
-        waveform_np = reduce_noise(waveform_np, sample_rate)
-        # Converter de volta para tensor
-        waveform = torch.tensor(waveform_np, dtype=torch.float32).unsqueeze(0)
-        # Normalização
-        waveform = normalize_waveform(waveform)
-        # Processamento pelo modelo ASR
+
+        # Resample para 16k
+        waveform = resample_waveform(waveform, sample_rate, 16000)
+        sample_rate = 16000
+
+        # VAD
+        waveform = apply_vad(waveform, sample_rate, frame_ms=30)
+
+        # Noise reduction e normalize
+        waveform = remove_noise_and_normalize(waveform, sample_rate)
+
+        # ASR
         inputs = processor_asr(waveform.squeeze(0), sampling_rate=sample_rate, return_tensors="pt")
         with torch.no_grad():
             logits = model_asr(inputs.input_values).logits
-        predicted_ids = torch.argmax(logits, dim=-1)
-        # Decodificação correta
-        transcription = processor_asr.decode(predicted_ids[0], skip_special_tokens=True)
+        pred_ids = torch.argmax(logits, dim=-1)
+        transcription = processor_asr.decode(pred_ids[0], skip_special_tokens=True)
         return transcription
+
     except Exception as e:
         logger.exception(f"Erro ao processar áudio: {e}")
         raise e
@@ -797,9 +820,7 @@ def upload():
 
         # Alinhamento e métricas
         mapped_words, mapped_indices = WordMatching.get_best_mapped_words(words_estimated, words_real)
-        wer = calculate_wer(words_real, mapped_words)
-        accuracy = (1 - wer) * 100
-        phoneme_accuracy = calculate_phoneme_accuracy(words_real, mapped_words)
+       
 
         # Geração do diff_html e feedback
         diff_html = []
@@ -865,43 +886,10 @@ def speak():
     tts.save(file_path)
     return send_file(file_path, as_attachment=True, mimetype='audio/mp3')
 
-# Funções adicionais necessárias ---------------------
-# Função para calcular WER
-def calculate_wer(reference, hypothesis):
-    # Usar edit distance para calcular WER
-    distance = WordMetrics.edit_distance(reference, hypothesis)
-    wer = distance / len(reference) if len(reference) > 0 else 0
-    return wer
 
-def calculate_phoneme_accuracy(reference_words, hypothesis_words):
-    total_phonemes = 0
-    total_distance = 0
-
-    for ref_word, hyp_word in zip(reference_words, hypothesis_words):
-        ref_pronunciation = transliterate_and_convert_sentence(ref_word)
-        hyp_pronunciation = transliterate_and_convert_sentence(hyp_word)
-
-        ref_phonemes = list(ref_pronunciation)
-        hyp_phonemes = list(hyp_pronunciation)
-
-        total_phonemes += len(ref_phonemes)
-        distance = WordMetrics.edit_distance(ref_phonemes, hyp_phonemes)
-        total_distance += distance
-
-    if total_phonemes > 0:
-        phoneme_accuracy = ((total_phonemes - total_distance) / total_phonemes) * 100
-    else:
-        phoneme_accuracy = 0
-
-    return phoneme_accuracy
 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000, debug=True)
 
-'''
 
-# Inicialização e execução do aplicativo
-if __name__ == '__main__':
-    app.run(Debug=True)
-'''
