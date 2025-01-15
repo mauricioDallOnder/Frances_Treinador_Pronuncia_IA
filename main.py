@@ -623,7 +623,7 @@ def remove_punctuation_end(sentence):
 # Funções para comparação fonética e Processamento de áudio -------------------------------------------------------
 def compare_phonetics(phonetic1, phonetic2, threshold=0.8):
     # Usar distância de edição normalizada para comparação
-    distance = WordMetrics.edit_distance_python(phonetic1, phonetic2)
+    distance = WordMetrics.edit_distance(phonetic1, phonetic2)
     max_len = max(len(phonetic1), len(phonetic2))
     similarity = 1 - (distance / max_len)
     return similarity >= threshold
@@ -854,7 +854,7 @@ def upload():
             'completeness_score': f"{completeness_score:.2f}"
         })
     except Exception as e:
-        logger.exception(f"Erro em /upload: {e}")
+        print(f"Erro em /upload: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/speak', methods=['POST'])
@@ -869,7 +869,7 @@ def speak():
 # Função para calcular WER
 def calculate_wer(reference, hypothesis):
     # Usar edit distance para calcular WER
-    distance = WordMetrics.edit_distance_python(reference, hypothesis)
+    distance = WordMetrics.edit_distance(reference, hypothesis)
     wer = distance / len(reference) if len(reference) > 0 else 0
     return wer
 
@@ -885,7 +885,7 @@ def calculate_phoneme_accuracy(reference_words, hypothesis_words):
         hyp_phonemes = list(hyp_pronunciation)
 
         total_phonemes += len(ref_phonemes)
-        distance = WordMetrics.edit_distance_python(ref_phonemes, hyp_phonemes)
+        distance = WordMetrics.edit_distance(ref_phonemes, hyp_phonemes)
         total_distance += distance
 
     if total_phonemes > 0:
@@ -895,11 +895,12 @@ def calculate_phoneme_accuracy(reference_words, hypothesis_words):
 
     return phoneme_accuracy
 
+
 if __name__ == '__main__':
     app.run(debug=True)
 '''
 
 # Inicialização e execução do aplicativo
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.getenv("PORT", default=3000))
+    app.run(Debug=True)
 '''

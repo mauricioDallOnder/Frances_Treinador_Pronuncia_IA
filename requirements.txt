@@ -23,4 +23,5 @@ jellyfish
 SentencePiece
 accelerate
 pyspellchecker
+rapidfuzz
 
