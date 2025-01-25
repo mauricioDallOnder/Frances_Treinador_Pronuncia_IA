@@ -1,4 +1,5 @@
 import sys
+from SpecialRoules import handle_est_ce_que, handle_est_pronunciation, handle_plus_pronunciation
 from getPronunciation import get_pronunciation_hints
 import torch
 import torchaudio
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 model_asr, processor_asr = None, None
 
 # Executor para processamento assíncrono
-executor = ThreadPoolExecutor(max_workers=1)
+executor = ThreadPoolExecutor(max_workers=2)
 
 # Limite de tempo para mapeamento
 TIME_THRESHOLD_MAPPING = 5.0
@@ -79,133 +80,98 @@ with open('dic.json', 'r', encoding='utf-8') as f:
 # mantenha também o 'default' para evitar KeyError.
 
 french_to_portuguese_phonemes = {
-    # Vogais orais
-    'i': {'default': 'i'},
-    'e': {'default': 'e'},
-    'ɛ': {'default': 'é', 'before_nasal': 'ê'},  # 'ê' se estiver antes de consoante nasal, por exemplo
-    'a': {'default': 'a'},
-    'ɑ': {'default': 'a'},
-    'ɔ': {'default': 'ó'},
-    'o': {'default': 'ô'},
-    'u': {'default': 'u'},
-    'y': {'default': 'u'},
-    'ø': {'default': 'ø'},
-    'œ': {'default': 'é'},
-    'ə': {'default': 'e'},
-    
-    # Vogais nasais
-    'ɛ̃': {'default': 'ẽ'},
-    'ɑ̃': {'default': 'ã'},
-    'ɔ̃': {'default': 'õ'},
-    'œ̃': {'default': 'ũn'},
-    'ð': {'default': 'on'},  # Ajuste conforme precisar
-    
-    # Semivogais
-    'w': {'default': 'u'},
-    'ɥ': {
-        'default': 'u',
-        'after_vowel': 'u'  # exemplo de refinamento para quando estiver após vogal
-    },
-    'j': {
-        'default': 'i',
-        'word_initial': 'i',
-        'after_consonant': 'i'
-    },
-    
-    # Consoantes
-    'b': {'default': 'b'},
-    'd': {
-        'default': 'd',
-        'before_i': 'dj'
-    },
-    'f': {'default': 'f'},
-    'g': {
-        'default': 'g',
-        'before_front_vowel': 'j',  # Ex.: "gilet" -> "jilet"
-        'before_back_vowel': 'g'
-    },
-    'ʒ': {
-        'default': 'j',
-        'word_initial': 'j',
-        'after_nasal': 'j'
-    },
-    'k': {
-        'default': 'k',
-        'before_front_vowel': 'qu'  # Ex.: "qui" -> "ki"
-    },
-    'l': {'default': 'l'},
-    'm': {'default': 'm'},
-    'n': {'default': 'n'},
-    'p': {'default': 'p'},
-    'ʁ': {
-        'default': 'r',
-        'word_initial': 'h',   # Ex.: início de palavra
-        'after_vowel': 'rr',   # Ex.: "para"
-        'after_consonant': 'r'
-    },
-    's': {
+    # VOGAIS ORAIS
+    'i': { 'default': 'i' },
+    'e': { 'default': 'e' },
+    'ɛ': { 'default': 'é' },
+    'a': { 'default': 'a' },
+    'ɑ': { 'default': 'a' },    # se não quiser “á” aberto
+    'ɔ': { 'default': 'ó' },
+    'o': { 'default': 'ô' },
+    'u': { 'default': 'u' },
+    'y': { 'default': 'u' },
+    'ø': { 'default': 'eu' },   # ou 'ô', se preferir "vou" ~ "vô"
+    'œ': { 'default': 'eu' },   # ou 'é'
+    'ə': { 'default': 'e'  },   # TROCA IMPORTANTE: schwa -> “e”
+
+    # VOGAIS NASAIS
+    'ɛ̃': { 'default': 'ẽ' },
+    'ɑ̃': { 'default': 'ã' },
+    'ɔ̃': { 'default': 'õ' },
+    'œ̃': { 'default': 'ũ' },
+    'ð':  { 'default': 'd'  },
+
+    # SEMIVOGAIS
+    'w': { 'default': 'u' },
+    'ɥ': { 'default': 'u', 'after_vowel': 'w' },
+    'j': { 'default': 'i' },
+
+    # CONSOANTES
+    'b':  { 'default': 'b' },
+    'd':  { 'default': 'd', 'before_i': 'dj' },
+    'f':  { 'default': 'f' },
+    'g':  { 'default': 'g', 'before_front_vowel': 'j' },
+    'ʒ':  { 'default': 'j' },
+    'k':  { 'default': 'k', 'before_front_vowel': 'qu' },
+    'l':  { 'default': 'l' },
+    'm':  { 'default': 'm' },
+    'n':  { 'default': 'n' },
+    'p':  { 'default': 'p' },
+    # REMOVE o "rr" e "h" aqui:
+    'ʁ':  { 'default': 'r' }, 
+    's':  { 
         'default': 's',
-        'between_vowels': 'z',  # Ex.: "rose" -> "roze"
+        'between_vowels': 'z',
         'word_final': 's'
     },
-    't': {
-        'default': 't',
-        'before_i': 'tch'  # Ex.: "ti" -> "tchi"
-    },
-    'v': {'default': 'v'},
-    'z': {'default': 'z'},
-    'ʃ': {'default': 'ch'},
-    'dʒ': {'default': 'dj'},
-    'tʃ': {'default': 'tch'},
-    'ɲ': {'default': 'nh'},
-    'ŋ': {'default': 'ng'},
-    'ç': {'default': 's'},
-    'ʎ': {'default': 'lh'},
-    'ʔ': {'default': ''},   # Glotal stop - normalmente omitimos
-    'θ': {'default': 't'},  # Ajuste se precisar
-    'ɾ': {'default': 'r'},
-    'ʕ': {'default': 'r'},  # Ajuste se precisar
-    
-    # Fonemas compostos
-    'sj': {'default': 'ch'},  # Ex.: "attention" -> "atenção"
-    'ks': {'default': 'x'},   # Ex.: "exact" -> "exato"
-    'gz': {'default': 'gz'},  # Ex.: "exagerer" -> "exagerar"
-    
-    # Outros fonemas
-    'x': {'default': 'x'},
-    
-    # Regras adicionais de contexto
-    'ʃj': {'default': 'chj'},  # Ex.: "chieur" -> "chieur"
-    'ʒʁ': {'default': 'jr'},   # Ex.: "journal" -> "jornal"
-    
-    # Tratamento do 'h' aspirado e mudo
-    # Para não gerar erro de KeyError ao chamar mapping['default'], inclua 'default'
-    'h': {
+    't':  { 'default': 't', 'before_i': 'tch' },
+    'v':  { 'default': 'v' },
+    'z':  { 'default': 'z' },
+    'ʃ':  { 'default': 'ch' },
+    'dʒ': { 'default': 'dj' },
+    'tʃ': { 'default': 'tch' },
+    'ɲ':  { 'default': 'nh' },
+    'ŋ':  { 'default': 'ng' },
+    'ç':  { 'default': 's' },
+    'ʎ':  { 'default': 'lh' },
+    'ʔ':  { 'default': '' },
+    'θ':  { 'default': 't' },
+    'ɾ':  { 'default': 'r' },
+    'ʕ':  { 'default': 'r' },
+
+    # FONEMAS COMPOSTOS
+    'sj': { 'default': 'si' },  
+    'ks': { 'default': 'x' },
+    'gz': { 'default': 'gz' },
+    'x':  { 'default': 'x' },
+    'ʃj': { 'default': 'chi' },
+    'ʒʁ':{ 'default': 'jr' },
+
+    # H aspirado ou mudo
+    'h':  {
         'default': '',
         'aspirated': 'h',
         'mute': ''
     },
-    
-    # Regras para consoantes duplas em português
-    'kk': {'default': 'c'},
-    'tt': {'default': 't'},
-    'pp': {'default': 'p'},
-    'bb': {'default': 'b'},
-    'gg': {'default': 'g'},
-    
-    # Tratamento especial para consoantes finais
-    'k$': {'default': 'c'},
-    'g$': {'default': 'g'},
-    'p$': {'default': 'p'},
-    't$': {'default': 't'},
-    
-    # Refinamento para fonemas intervocálicos
-    'ɡə': {'default': 'gue'},
-    'ɡi': {'default': 'gi'},
-    
-    # Adição de fonemas menos comuns
-    'ʧ': {'default': 'tch'},
-    'ʤ': {'default': 'dj'},
+
+    # Consoantes duplas
+    'kk': { 'default': 'c' },
+    'tt': { 'default': 't' },
+    'pp': { 'default': 'p' },
+    'bb': { 'default': 'b' },
+    'gg': { 'default': 'g' },
+
+    # Finais
+    'k$': { 'default': 'c' },
+    'g$': { 'default': 'g' },
+    'p$': { 'default': 'p' },
+    't$': { 'default': 't' },
+
+    # Outros
+    'ɡə': { 'default': 'gue' },
+    'ɡi': { 'default': 'gi' },
+    'ʧ': { 'default': 'tch' },
+    'ʤ': { 'default': 'dj' }
 }
 
 # Características fonéticas
@@ -420,7 +386,7 @@ def aplicar_regras_de_liaison(texto):
     # Se quiser remover esta função, pode, mas ela pode ser útil
     # caso queira ajustar casos específicos de liaison.
     # Exemplo:
-    # texto = texto.replace("nu a", "nu.z a")
+    texto = texto.replace("nu a", "nu.z a")
     return texto
 
 def gerar_versao_usuario(frase_com_pontos):
@@ -430,25 +396,42 @@ def gerar_versao_usuario(frase_com_pontos):
     palavras_sem_pontos = [p.replace('.', '') for p in palavras]
     return ' '.join(palavras_sem_pontos)
 
-# Exemplo de uso:
-# Frase no backend: "jê truv qu.é lê ʀez.e.ô sós.jó só̃t utch.il pur próm.uv.u.ar só̃ trav.aj"
-# Para o usuário final: remover pontos e apresentar palavras inteiras.
-# Backend: jê truv qu.é lê ʀez.e.ô sós.jó só̃t utch.il pur próm.uv.u.ar só̃ trav.aj
-# Usuario: jê truv quê lê ʀezeô sósjó só̃t utchil pur prómuvuar só̃ travaj
 
-# Exemplo de integração com transliterate_and_convert_sentence (presumindo que já existe no seu código):
+
 def transliterate_and_convert_sentence(sentence):
     words = sentence.split()
     words = handle_apostrophes(words)
-    pronunciations = [get_pronunciation(word) for word in words]
-    pronunciations = apply_liaisons(words, pronunciations)
-    pronunciations = [remove_silent_endings(pron, word) for pron, word in zip(pronunciations, words)]
 
+    # 1) TRATAMENTO DE "est-ce que"
+    words = handle_est_ce_que(words)
+
+    # 2) TRATAMENTO ESPECIAL PARA "plus"
+    for i, w in enumerate(words):
+        if w.lower() == "plus":
+            special_plus = handle_plus_pronunciation(i, words)
+            words[i] = special_plus
+    
+    # 3) TRATAMENTO ESPECIAL PARA "est" (verbo x direção), se quiser
+    for i, w in enumerate(words):
+        if w.lower() == "est":
+            special_est = handle_est_pronunciation(i, words)
+            words[i] = special_est
+
+    # 4) Converter cada palavra em pronúncia (Epitran + dicionário)
+    pronunciations = [get_pronunciation(word) for word in words]
+
+    # 5) Liaisons, removendo finais mudos, etc.
+    pronunciations = apply_liaisons(words, pronunciations)
+    pronunciations = [remove_silent_endings(pron, word)
+                      for pron, word in zip(pronunciations, words)]
+
+    # 6) Converte fonemas para "pt-BR"
     palavras_convertidas = [
         convert_pronunciation_to_portuguese(pron, idx, pronunciations)
         for idx, pron in enumerate(pronunciations)
     ]
 
+    # 7) Silabifica e une com pontos
     palavras_silabificadas = []
     for p in palavras_convertidas:
         silabas = silabificar_refinado(p)
@@ -457,11 +440,13 @@ def transliterate_and_convert_sentence(sentence):
     frase_com_pontos = ' '.join(palavras_silabificadas)
     frase_com_pontos = aplicar_regras_de_liaison(frase_com_pontos)
 
-    # Gerar versão para o usuário
+    # 8) Gerar versão amigável para usuário (remover pontos)
     frase_usuario = gerar_versao_usuario(frase_com_pontos)
 
-   
     return frase_usuario
+
+
+
 
   
 
@@ -561,6 +546,7 @@ def handle_apostrophes(words_list):
     return new_words
 
 def apply_liaisons(words_list, pronunciations):
+    nasal_words = {'un','mon','ton','son','en'}
     new_pronunciations = []
     for i in range(len(words_list) - 1):
         current_word = words_list[i]
@@ -573,7 +559,7 @@ def apply_liaisons(words_list, pronunciations):
 
         # Verificar se a próxima palavra começa com vogal ou 'h' mudo
         if re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE) and not h_aspirate:
-            # Aplicar liaison
+            # --- REGRAS DE LIAISON EXISTENTES ---
             if current_word.lower() == "les":
                 current_pron = current_pron.rstrip('e') + 'z'
             elif current_word[-1] in ['s', 'x', 'z']:
@@ -591,12 +577,35 @@ def apply_liaisons(words_list, pronunciations):
             elif current_word[-1] == 'r':
                 current_pron = current_pron + 'r'
             elif current_word.lower() == "d'" and re.match(r"^[aeiouyâêîôûéèëïüÿæœ]", next_word, re.IGNORECASE):
-                current_pron = current_pron.rstrip('e') + 'z'  # Adiciona /z/
-        # Caso contrário, não aplica liaison
+                current_pron = current_pron.rstrip('e') + 'z'
+            
+            # --- REGRAS ESPECIAIS PARA "un" ---
+            # Se a palavra for "un" E a próxima inicia por vogal (ou h mudo),
+            # a nasal final ("ã" ou "ẽ") volta a ter som de "n" => "ãn" / "ẽn"
+            if current_word.lower() == 'un':
+                # Supondo que 'un' foi transliterado como "ẽ" ou "œ̃":
+                # Exemplo: se get_pronunciation("un") => "œ̃", que mapeia p/ "ãn" ou "ẽ"
+                # Precisamos reintroduzir o /n/.
+                # Só se o final for 'ã'/'ẽ' (ou algo nasal). Ajuste se o seu mapeamento for diferente!
+                if current_pron.endswith('ã'):
+                    # vira "ãn"
+                    current_pron = current_pron[:-1] + 'ãn'
+                elif current_pron.endswith('ẽ'):
+                    # vira "ẽn"
+                    current_pron = current_pron[:-1] + 'ẽn'
+                elif current_pron.endswith('õ'):
+                    # "õn"? raríssimo pra "un", mas se você quiser cobrir "on"...
+                    current_pron = current_pron[:-1] + 'õn'
+                if current_word.lower() in nasal_words:
+                    # reintroduz 'n'
+                    if current_pron.endswith('ã'):
+                        current_pron = current_pron[:-1] + 'ãn'
+    
         new_pronunciations.append(current_pron)
-    # Adicionar a última pronúncia
+    # Adicionar a última pronúncia (não esqueça)
     new_pronunciations.append(pronunciations[-1])
     return new_pronunciations
+
 
 def remove_accents(text):
     return ''.join(
@@ -698,15 +707,15 @@ def process_audio(file_path: str) -> str:
         waveform = resample_waveform(waveform, sample_rate, 16000)
         sample_rate = 16000
 
-        # VAD
-        waveform = apply_vad(waveform, sample_rate, frame_ms=30)
+        # VAD audios curtos de 1-10 segundos nao precisam da redução de silencio do fundo
+       # waveform = apply_vad(waveform, sample_rate, frame_ms=30)
 
         # Noise reduction e normalize
         waveform = remove_noise_and_normalize(waveform, sample_rate)
 
         # ASR
         inputs = processor_asr(waveform.squeeze(0), sampling_rate=sample_rate, return_tensors="pt")
-        with torch.no_grad():
+        with torch.inference_mode():
             logits = model_asr(inputs.input_values).logits
         pred_ids = torch.argmax(logits, dim=-1)
         transcription = processor_asr.decode(pred_ids[0], skip_special_tokens=True)
