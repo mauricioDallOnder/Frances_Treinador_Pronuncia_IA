@@ -218,6 +218,10 @@ def get_pronunciation(word):
         return 'él'
     elif word_normalized=='une':
         return  'úne'
+    elif word_normalized=='un':
+        return  'ãn'
+    elif word_normalized=="Il est":
+        return 'il ét'
     else:
         try:
             # Tentar obter a pronúncia do dic.json
@@ -627,10 +631,8 @@ def remove_punctuation_end(sentence):
 
 # Funções para comparação fonética e Processamento de áudio -------------------------------------------------------
 def compare_phonetics(phonetic1, phonetic2, threshold=0.8):
-    # Usar distância de edição normalizada para comparação
-    distance = WordMetrics.edit_distance(phonetic1, phonetic2)
-    max_len = max(len(phonetic1), len(phonetic2))
-    similarity = 1 - (distance / max_len)
+    """Usa similaridade híbrida melhorada"""
+    similarity = WordMetrics.hybrid_similarity(phonetic1, phonetic2)
     return similarity >= threshold
 
 def apply_vad(waveform: torch.Tensor, sample_rate: int, frame_ms: int = 30) -> torch.Tensor:

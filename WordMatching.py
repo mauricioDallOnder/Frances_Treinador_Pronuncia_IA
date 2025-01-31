@@ -69,15 +69,7 @@ def compute_word_cost(word_expected: str, word_recognized: str,
         we = word_expected.lower()
         wr = word_recognized.lower()
 
-    if fuzzy:
-        # Exemplo: fuzzy partial_ratio
-        similarity = fuzz.partial_ratio(we, wr)
-        cost = 100 - similarity  # Similaridade 0-100, então custo 100 - similarity
-    else:
-        # Normalizar Levenshtein pela maior das duas palavras
-        distance = WordMetrics.edit_distance(we, wr)
-        max_len = max(len(we), len(wr)) or 1
-        cost = (distance / max_len) * 100.0  # Escalamos de 0 a 100
+    cost = 100 * (1 - WordMetrics.hybrid_similarity(we, wr))
 
     return cost * function_word_factor
 
