@@ -219,4 +219,9 @@ def speak():
 # Start
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
+    # dev local
     app.run(host='0.0.0.0', port=3000, debug=True)
+else:
+    # em produção (quando importado pelo Railway), use Waitress:
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
