@@ -1,163 +1,213 @@
-html {
-  height: 100%;
-  width: 100%;
+/* -------------------------
+   1. VARIÁVEIS GLOBAIS
+-------------------------- */
+:root {
+  /* Cores */
+  --color-primary: #4158d0;
+  --color-overlay: rgba(255, 255, 255, 0.9);
+  --color-success: #28a745;
+  --color-danger: #dc3545;
+  --color-text: #2c3e50;
+
+  /* Espaçamentos */
+  --sp-sm: 0.5rem;
+  --sp: 1rem;
+  --sp-lg: 1.5rem;
+
+  /* Tipografia */
+  --font-base: 1rem;
+  --font-large: 1.125rem;
+  --font-small: 0.875rem;
+
+  /* Raio de borda */
+  --radius: 0.625rem;
 }
 
-body {
-  background-color: #4158D0;
-  max-width: 100%;
+/* -------------------------
+   2. RESET BÁSICO
+-------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
   margin: 0;
-  padding: 20px;
-  background-image: url('https://firebasestorage.googleapis.com/v0/b/mauriciodallonder-64688.appspot.com/o/bandeira.jpg?alt=media&token=93383751-b852-4b4a-89e9-82037c09f9da');
-  background-size: cover;
-  background-attachment: fixed;
+  padding: 0;
+  height: 100%;
+  font-size: var(--font-base);
+  line-height: 1.5;
+  color: var(--color-text);
 }
+
+/* -------------------------
+   3. BACKGROUND + LAYOUT
+-------------------------- */
+body {
+  background: 
+    linear-gradient(rgba(65, 88, 208, 0.6), rgba(65, 88, 208, 0.6)),
+    url('https://firebasestorage.googleapis.com/v0/b/mauriciodallonder-64688.appspot.com/o/bandeira.jpg?alt=media&token=93383751-b852-4b4a-89e9-82037c09f9da')
+    center/cover fixed;
+  padding: var(--sp-lg);
+}
+
 .container {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  padding: 20px;
-  margin-top: 20px;
+  max-width: 1200px;
+  margin-inline: auto;
+  background: var(--color-overlay);
+  border-radius: var(--radius);
+  padding: var(--sp-lg);
 }
-.main-content, .feedback-box {
-  margin-bottom: 20px;
+
+/* -------------------------
+   4. TIPOGRAFIA E UTILS
+-------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: var(--sp);
 }
-.word {
-  cursor: pointer;
-  margin-right: 5px;
-  padding: 5px;
-  color:#4158D0;
-  border-radius: 5px;
+
+button, select, textarea {
+  font-family: inherit;
+  font-size: var(--font-base);
 }
-.separator {
-  color: red;
-  margin-right: 5px;
+
+/* -------------------------
+   5. COMPONENTES PRINCIPAIS
+-------------------------- */
+/* Flex container principal */
+.flex-md-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-lg);
 }
-.incorrect {
-  color: red;
+
+/* Áreas de conteúdo */
+.main-content {
+  flex: 1 1 65%;
 }
-.correct {
-  color: green;
+
+.feedback-box {
+  flex: 1 1 30%;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius);
+  padding: var(--sp-lg);
 }
+
+/* Seções internas */
+.section {
+  margin-bottom: var(--sp-lg);
+}
+
+/* Botões */
+.classButton {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp);
+}
+
 .btn-speak {
   display: block;
-  margin-top: 10px;
   width: 100%;
+  margin-top: var(--sp);
 }
-.recording {
-  color: red;
+
+/* Palavras clicáveis */
+.word {
+  display: inline-block;
+  cursor: pointer;
+  margin-right: var(--sp-sm);
+  padding: var(--sp-sm);
+  color: var(--color-primary);
+  border-radius: var(--radius);
+  transition: background 0.2s;
 }
+.word:hover,
+.word:focus {
+  background: rgba(65, 88, 208, 0.1);
+}
+
+/* Destaques de correção */
+.correct {
+  color: var(--color-success);
+}
+.incorrect, .recording {
+  color: var(--color-danger);
+}
+
+/* Uploading */
 .uploading-message {
-  display: none;
-  color: red;
+  display: none; /* mostrado via JS */
+  color: var(--color-danger);
 }
+
+/* Textarea custom */
 .textarea {
-  width: fit-content;
-  height: fit-content;
-  resize: none; /* Impede o redimensionamento manual */
-  overflow: hidden; /* Remove todas as barras de rolagem */
-  font-size: 16px;
-  padding: 10px;
-  box-sizing: border-box;
-  min-height: 60px;
-  line-height: 1.5;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  font-size: var(--font-base);
+  padding: var(--sp);
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
 }
+
+/* Select e options */
 select {
   width: 100%;
   max-width: 600px;
-  padding: 8px;
-  border-radius: 4px;
+  padding: var(--sp-sm);
   border: 1px solid #ccc;
-  font-size: 16px;
+  border-radius: var(--radius);
 }
 
 optgroup {
   font-weight: bold;
-  color: #2c3e50;
 }
 
 option {
-  padding: 4px;
-}
-.explica{
-  font-size: 14px !important;
-  font-weight: bold !important;
+  padding: var(--sp-sm);
 }
 
-/* Responsividade para telas menores */
+/* Explicações */
+.explica {
+  font-size: var(--font-small);
+  font-weight: bold;
+  margin-bottom: var(--sp-sm);
+}
+
+/* -------------------------
+   6. RESPONSIVIDADE
+-------------------------- */
+/* Smartphones */
 @media (max-width: 767px) {
-  /* Ajusta a largura do textarea para ocupar o espaço total */
-  .form-control {
-    width: 100%;
-    font-size: 16px;
-    height: 100px;
-  }
-
-  /* Ajusta o espaçamento e alinhamento para evitar sobreposição */
   .flex-md-row {
     display: block;
-    width: 100%;
   }
-
-  .main-content, .feedback-box {
+  .main-content,
+  .feedback-box {
     width: 100%;
     margin: 0;
-    padding: 10px 0;
+    padding: var(--sp) 0;
   }
-
-  #translation,
-  #pronunciation {
-    font-size: 18px;
-    line-height: 1.4;
-    margin-top: 8px;
-    color:#4158D0
+  .form-control {
+    width: 100%;
+    height: 6rem;
   }
-
-  /* Ajuste do tamanho da fonte e do espaçamento */
-  .form-label {
-    font-size: 16px;
-    margin-bottom: 5px;
-  }
-
-  #feedbackBox {
-    padding: 10px;
-    font-size: 16px;
-  }
-  .classButton{
-    display: flex;
+  .classButton {
     flex-direction: column;
   }
-  .word{
-    font-size:medium;
-    line-height: 1.6rem;
+  .word {
+    font-size: var(--font-base);
+    line-height: 1.4;
   }
- 
 }
 
-/* Ajuste para telas maiores */
+/* Tablets e desktops médios */
 @media (min-width: 768px) {
-  .flex-md-row {
-    display: flex;
-    justify-content: space-between;
+  body {
+    padding: var(--sp-lg) var(--sp);
   }
-
-  .main-content {
-    flex: 0 0 65%;
-  }
-
-  .feedback-box {
-    flex: 0 0 30%;
-    margin-left: 20px;
-    border: 2px solid #3b5998;
-    border-radius: 10px;
-    padding: 20px;
-   
-  }
-  
-}
-
-.classButton{
-  display: flex;
-  justify-content: center;
-  gap:12px
-  
 }
