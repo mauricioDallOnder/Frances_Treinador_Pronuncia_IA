@@ -19,41 +19,50 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <meta name="description" content="Entraîneur de prononciation IA – entraînez-vous à parler français avec retours instantanés de prononciation et conseils.">
-<meta name="keywords" content="prononciation français, IA, entraînement oral, FLE, DELF">
-<link rel="canonical" href="https://votresite.com/">
-<!-- Open Graph / Facebook -->
-<meta property="og:title" content="Entraîneur de prononciation IA">
-<meta property="og:description" content="Améliorez votre prononciation en français avec l’IA.">
-<meta property="og:image" content="https://votresite.com/static/img/preview.png">
-<meta property="og:url" content="https://votresite.com/">
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image">
-    <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Entraîneur de prononciation IA",
-  "url": "https://votresite.com/",
-  "description": "Plateforme d’entraînement de prononciation français avec IA",
-  "applicationCategory": "Education"
-}
-</script>
-
+    <meta
+      name="description"
+      content="Entraîneur de prononciation IA – entraînez-vous à parler français avec retours instantanés de prononciation et conseils."
+    />
+    <meta
+      name="keywords"
+      content="prononciation français, IA, entraînement oral, FLE, DELF"
+    />
+    <link rel="canonical" href="https://votresite.com/" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Entraîneur de prononciation IA" />
+    <meta
+      property="og:description"
+      content="Améliorez votre prononciation en français avec l’IA."
+    />
+    <meta
+      property="og:image"
+      content="https://votresite.com/static/img/preview.png"
+    />
+    <meta property="og:url" content="https://votresite.com/" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
 
   <body>
-    <div class="container">
-      <div class="flex-md-row">
-        <div class="main-content">
-          <h1 class="mb-4">Entraîneur de prononciation IA</h1>
+    <!-- Header landmark -->
+    <header role="banner" class="container">
+      <h1 class="mb-4">Entraîneur de prononciation IA</h1>
+    </header>
 
-          <div class="mb-3">
-            <label for="category" class="form-label"
-              >Sélectionnez la catégorie :</label
-            >
-            <select class="form-select" id="category" name="category">
-              <!-- Cuisine et transport -->
+    <!-- Main content landmark -->
+    <main role="main" class="container">
+      <!-- Sélection de catégorie -->
+      <section class="mb-3">
+        <label for="category" class="form-label">
+          Sélectionnez la catégorie :
+        </label>
+        <select
+          class="form-select"
+          id="category"
+          name="category"
+          aria-required="true"
+        >
+           <!-- Cuisine et transport -->
               <optgroup label="Pharses Metro-boulout-dôdo">
                 <option value="transport">transport</option>
                 <option value="aeroport">aeroport</option>
@@ -179,101 +188,136 @@
                 </option>
                 <option value="negation">La negation</option>
               </optgroup>
-            </select>
-          </div>
+        </select>
+      </section>
 
-          <div class="mb-3">
-            <label for="text" class="form-label"
-              >Écrivez ou générez un texte ci-dessous :</label
-            >
-            <textarea class="form-control" id="text" name="text"></textarea>
-          </div>
+      <!-- Zone de texte -->
+      <section class="mb-3">
+        <label for="text" class="form-label"
+          >Écrivez ou générez un texte ci-dessous :</label
+        >
+        <textarea
+          class="form-control"
+          id="text"
+          name="text"
+          aria-required="true"
+        ></textarea>
+      </section>
 
-          <div class="classButton">
-            <p
-              id="statusMessage"
-              style="
-                display: none;
-                font-weight: bold;
-                color: red;
-                text-align: center;
-                font-size: 12px;
-              "
-            ></p>
-            <button
-              class="btn btn-success"
-              id="generateButton"
-              onclick="generateSentence()"
-            >
-              Générer une phrase
-            </button>
-            <button
-              class="btn btn-danger"
-              id="recordButton"
-              onclick="toggleRecording()"
-            >
-              <span
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-              >
-                Parler
-                <i class="material-icons" id="recordIcon">mic</i>
-              </span>
-            </button>
-            <button
-              class="btn btn-primary"
-              id="speakButton"
-              onclick="speakText()"
-            >
-              Écouter le texte
-            </button>
-          </div>
+      <!-- Boutons d’action -->
+      <section class="classButton">
+        <p
+          id="statusMessage"
+          aria-live="polite"
+          aria-atomic="true"
+          style="display: none; font-weight: bold; color: red; text-align: center; font-size: 12px;"
+        ></p>
 
-          <div class="pronunciation-feedback mt-4">
-            <h3 class="form-label">Prononciation:</h3>
-            <h3 id="pronunciation"></h3>
-          </div>
+        <button
+          class="btn btn-success"
+          id="generateButton"
+          onclick="generateSentence()"
+        >
+          Générer une phrase
+        </button>
 
-          <div id="hintsContainer" class="mt-3">
-            <h4>Dicas de pronúnciation:</h4>
-            <ul id="hintsList"></ul>
-          </div>
+        <button
+          class="btn btn-danger"
+          id="recordButton"
+          aria-pressed="false"
+          onclick="toggleRecording()"
+        >
+          <span class="d-flex align-items-center justify-content-center">
+            Parler <i class="material-icons" id="recordIcon">mic</i>
+          </span>
+        </button>
 
-          <!-- Elemento para exibir as mensagens de status -->
-          <div
-            class="uploading-message mt-3"
-            id="uploadingMessage"
-            style="display: none"
-          >
-            <span id="uploadingText">Envoi audio... Attendre.</span>
-            <progress
-              id="uploadProgress"
-              value="0"
-              max="100"
-              style="width: 100%"
-            ></progress>
-          </div>
+        <button
+          class="btn btn-primary"
+          id="speakButton"
+          onclick="speakText()"
+        >
+          Écouter le texte
+        </button>
+      </section>
 
-          <div class="result mt-4">
-            <h3>Feedback:</h3>
-            <p>Taux de réussite en prononciation: <span id="ratio"></span>%</p>
-            <div class="diff" id="diff"></div>
-            <br />
-            <p>Taux d’achèvement: <span id="completeness"></span>%</p>
-          </div>
-          <div id="audioContainer" class="mt-4"></div>
-        </div>
-        <div class="feedback-box" id="feedbackBox">
-          <p id="feedbackContent">
-            Cliquez sur un mot pour voir sa prononciation.
-          </p>
-        </div>
-      </div>
-    </div>
+      <!-- Prononciation affichée -->
+      <section
+        class="pronunciation-feedback mt-4"
+        aria-labelledby="prononciation-title"
+      >
+        <h2 id="prononciation-title" class="form-label">Prononciation :</h2>
+        <div id="pronunciation" tabindex="0"></div>
+      </section>
 
-   <script src="scripts.js"></script>
+      <!-- Suggestions / astuces -->
+      <section
+        id="hintsContainer"
+        class="mt-3"
+        aria-labelledby="hints-title"
+      >
+        <h2 id="hints-title">Dicas de pronúnciation :</h2>
+        <ul id="hintsList"></ul>
+      </section>
+
+      <!-- Uploading message -->
+      <section
+        id="uploadingMessage"
+        class="uploading-message mt-3"
+        aria-live="assertive"
+        style="display: none;"
+      >
+        <span id="uploadingText">Envoi audio... Attendre.</span>
+        <progress
+          id="uploadProgress"
+          value="0"
+          max="100"
+          style="width: 100%;"
+        ></progress>
+      </section>
+
+      <!-- Résultats -->
+      <section class="result mt-4" aria-labelledby="result-title">
+        <h2 id="result-title">Feedback :</h2>
+        <p>
+          Taux de réussite en prononciation :
+          <span id="ratio"></span>%
+        </p>
+        <div class="diff" id="diff" tabindex="0"></div>
+        <p>
+          Taux d’achèvement :
+          <span id="completeness"></span>%
+        </p>
+      </section>
+
+      <!-- Conteneur audio -->
+      <section
+        id="audioContainer"
+        class="mt-4"
+        aria-label="Lecteur audio"
+      ></section>
+    </main>
+
+    <!-- Sidebar / complémentaire -->
+    <aside
+      id="feedbackBox"
+      role="complementary"
+      aria-labelledby="feedbackBoxTitle"
+      class="container"
+    >
+      <h2 id="feedbackBoxTitle" class="visually-hidden">
+        Feedback de prononciation
+      </h2>
+      <p id="feedbackContent">
+        Cliquez sur un mot pour voir sa prononciation.
+      </p>
+    </aside>
+
+    <!-- Footer landmark -->
+    <footer role="contentinfo" class="container text-center mt-4">
+      <p>© 2025 Mauricio Dall Onder. Tous droits réservés.</p>
+    </footer>
+
+    <script src="scripts.js"></script>
   </body>
 </html>
