@@ -24,4 +24,4 @@ SentencePiece
 accelerate
 pyspellchecker
 rapidfuzz
-
+webrtcvad
