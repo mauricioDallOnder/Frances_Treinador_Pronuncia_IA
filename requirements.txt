@@ -25,3 +25,7 @@ accelerate
 pyspellchecker
 rapidfuzz
 webrtcvad
+celery
+flask_socketio
+redis
+eventlet
