@@ -56,7 +56,7 @@
             />
           
             <!-- título central -->
-            <h1 class="mb-4">Entraîneur de prononciation</h1>
+            <h1 class="mb-4">Treinador de Pronúncia</h1>
           
             <!-- ícone à direita -->
             <img
@@ -67,7 +67,7 @@
             />
           
             <p class="lead">
-              Treine ta prononciation avec des retours instantanés en français.
+              Pratique sua pronúncia com feedback instantâneo em francês.
             </p>
           </header>
           
@@ -75,7 +75,7 @@
 
           <div class="mb-3">
             <label for="category" class="form-label"
-              >Sélectionnez la catégorie :</label
+              >Selecione uma categoria :</label
             >
             <select class="form-select" id="category" name="category">
               <!-- Cuisine et transport -->
@@ -209,7 +209,7 @@
 
           <div class="mb-3">
             <label for="text" class="form-label"
-              >Écrivez ou générez un texte ci-dessous :</label
+              >Escreve ou gere um texto clicando no botão abaixo :</label
             >
             <textarea class="form-control" id="text" name="text"></textarea>
           </div>
@@ -230,7 +230,7 @@
               id="generateButton"
               onclick="generateSentence()"
             >
-              Générer une phrase
+              Gerar uma frase
             </button>
             <button
               class="btn btn-danger"
@@ -244,7 +244,7 @@
                   justify-content: center;
                 "
               >
-                Parler
+                Falar frase
                 <i class="material-icons" id="recordIcon">mic</i>
               </span>
             </button>
@@ -253,17 +253,17 @@
               id="speakButton"
               onclick="speakText()"
             >
-              Écouter le texte
+              Escutar o texto
             </button>
           </div>
 
           <div class="pronunciation-feedback mt-4">
-            <h3 class="form-label">Prononciation:</h3>
+            <h3 class="form-label">Pronunciação:</h3>
             <h3 id="pronunciation"></h3>
           </div>
 
           <div id="hintsContainer" class="mt-3">
-            <h4>Dicas de pronúnciation:</h4>
+            <h4>Dicas de pronunciação:</h4>
             <ul id="hintsList"></ul>
           </div>
 
@@ -273,7 +273,7 @@
             id="uploadingMessage"
             style="display: none"
           >
-            <span id="uploadingText">Envoi audio... Attendre.</span>
+            <span id="uploadingText">Enviando audio.. aguarde</span>
             <progress
               id="uploadProgress"
               value="0"
@@ -284,16 +284,16 @@
 
           <div class="result mt-4">
             <h3>Feedback:</h3>
-            <p>Taux de réussite en prononciation: <span id="ratio"></span>%</p>
+            <p>Taxa de sucesso na pronúncia: <span id="ratio"></span>%</p>
             <div class="diff" id="diff"></div>
             <br />
-            <p>Taux d’achèvement: <span id="completeness"></span>%</p>
+            <p>Taxa de completude da pronúncia: <span id="completeness"></span>%</p>
           </div>
           <div id="audioContainer" class="mt-4"></div>
         </section>
         <div class="feedback-box" id="feedbackBox">
           <p id="feedbackContent">
-            Cliquez sur un mot pour voir sa prononciation.
+            Clique em cima de uma palavra para ver a pronúncia
           </p>
         </div>
       </div>
@@ -433,7 +433,7 @@
                 const listItem = document.createElement("li");
                 // Usamos 'highlighted_word' para mostrar com destaques
                 const explanationsStr = hintItem.explanations.join(" ");
-                listItem.innerHTML = `<strong classname='explica'>${hintItem.highlighted_word}:</strong> ${explanationsStr}</br>_______________________________________________________________________________________________</br>`;
+                listItem.innerHTML = `<strong classname='explica'>${hintItem.highlighted_word}:</strong> ${explanationsStr}</br>___________________________________________________</br>`;
                 hintsList.appendChild(listItem);
               });
             } else {
@@ -476,12 +476,12 @@
             <strong>Prononciation correct:</strong> ${escapeHtml(
               pronunciation.correct
             )}<br>
-            <strong>Votre Prononciation:</strong> ${escapeHtml(
+            <strong>Sua pronúncia:</strong> ${escapeHtml(
               pronunciation.user || "N/A"
             )}
             <button class="btn btn-sm btn-info btn-speak" onclick="speakWord('${escapeHtml(
               word
-            )}')">Écouter la prononciation</button> 
+            )}')">Escutar a pronúncia</button> 
         `;
 
           // Corrigindo o atributo onclick (mantendo a correção anterior):
@@ -523,7 +523,7 @@
       function speakText() {
         let text = document.getElementById("text").value;
         disableButtons();
-        showMessage("Lecture du texte en cours...");
+        showMessage("Leitura do texto em curso...");
 
         fetch("/speak", {
           method: "POST",
@@ -608,7 +608,7 @@
           .catch((error) => {
             console.error("Erreur lors de l'accès au microphone:", error);
             alert(
-              "Erreur lors de l'accès au microphone. Veuillez vérifier les permissions."
+              "Erro acessar o microfone, verifique suas permissoes."
             );
           });
       }
@@ -788,7 +788,7 @@
           .catch((error) => {
             console.error("Erreur:", error);
             alert(
-              "Une erreur est survenue lors de la génération de la phrase."
+              "Erro ao gerar a frase."
             );
           })
           .finally(() => {
