@@ -453,7 +453,7 @@ SPECIFIC_WORDS = {
 def make_highlight(m: re.Match, template: str, category: str) -> Tuple[int, int, str, str]:
     color = get_color(category)
     text = html.escape(m.group(0))
-    span = f'<span class="highlight" style="color:{color}">{text}</span>'
+    span = f'<span class="highlight" style="color:{color}; font-weight:bold;">{text}</span>'
     explanation = template.format(match=text)
     return (m.start(), m.end(), span, explanation)
 
@@ -466,7 +466,7 @@ def find_patterns_in_word(word: str) -> List[Tuple[int, int, str, str]]:
     if word_lower in SPECIFIC_WORDS:
         # Para palavras específicas, destacamos a palavra inteira
         color = get_color('special')
-        span = f'<span class="highlight" style="color:{color}">{html.escape(word)}</span>'
+        span = f'<span class="highlight" style="color:{color}; font-weight:bold;">{html.escape(word)}</span>'
         explanation = SPECIFIC_WORDS[word_lower]
         results.append((0, len(word), span, explanation))
         return results
@@ -526,9 +526,30 @@ def get_pronunciation_hints(word: str) -> Dict[str, Any]:
     # Aplicar destaques
     highlighted, explanations = apply_highlights(word, highlights)
     
+    # Garantir que as explicações contenham HTML com cores
+    colored_explanations = []
+    for explanation in explanations:
+        # Verificar se já contém HTML
+        if '<span' in explanation:
+            colored_explanations.append(explanation)
+        else:
+            # Procurar por padrões entre aspas para colorir
+            matches = re.finditer(r'"([^"]+)"', explanation)
+            colored_exp = explanation
+            offset = 0
+            for m in matches:
+                start, end = m.span(1)
+                start += offset
+                end += offset
+                color = get_color('special')
+                span = f'<span class="highlight" style="color:{color}; font-weight:bold;">{m.group(1)}</span>'
+                colored_exp = colored_exp[:start-1] + span + colored_exp[end+1:]
+                offset += len(span) - (end - start + 2)  # +2 para as aspas
+            colored_explanations.append(colored_exp)
+    
     return {
         "word": word,
-        "explanations": explanations,
+        "explanations": colored_explanations,
         "highlighted": highlighted
     }
 
@@ -571,11 +592,17 @@ def get_liaison_hints(sentence: str) -> List[Dict[str, Any]]:
             if re.match(r'^[aeiouéèêëàâîïôûœæyh]', next_word) and next_word not in ["huit", "hache", "honte"]:
                 liaison_type = "obrigatória" if current_word in ["les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "aux", "est", "sont"] else "opcional"
                 
+                # Colorir as palavras
+                color1 = get_color('special')
+                color2 = get_color('special')
+                colored_word1 = f'<span class="highlight" style="color:{color1}; font-weight:bold;">{current_word}</span>'
+                colored_word2 = f'<span class="highlight" style="color:{color2}; font-weight:bold;">{next_word}</span>'
+                
                 liaisons.append({
                     "word1": current_word,
                     "word2": next_word,
                     "type": liaison_type,
-                    "explanation": f"Liaison {liaison_type} entre '{current_word}' e '{next_word}'"
+                    "explanation": f"Liaison {liaison_type} entre {colored_word1} e {colored_word2}"
                 })
     
     return liaisons

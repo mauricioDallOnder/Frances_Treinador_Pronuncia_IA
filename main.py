@@ -10,11 +10,6 @@ import traceback
 from flask import Flask, request, render_template, jsonify, send_file
 from concurrent.futures import ThreadPoolExecutor
 from SpecialRoules import *
-import torch
-import torchaudio
-import noisereduce as nr
-from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
-from gtts import gTTS
 
 import WordMatching
 import WordMetrics
@@ -40,16 +35,7 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Carrega modelos ASR Wav2Vec2 **uma vez** no startup
-logger.info("Carregando ASR Wav2Vec2...")
-processor_asr = Wav2Vec2Processor.from_pretrained(
-    "jonatasgrosman/wav2vec2-xls-r-1b-french"
-)
-model_asr = Wav2Vec2ForCTC.from_pretrained(
-    "jonatasgrosman/wav2vec2-xls-r-1b-french"
-)
-
-# Thread pool para processar áudio sem bloquear o Flask
+# Thread pool para processar tarefas em background
 executor = ThreadPoolExecutor(max_workers=2)
 
 # Carrega frases de exemplo
@@ -67,37 +53,6 @@ try:
 except Exception as e:
     logger.error(f"Erro ao carregar frases_categorias.pickle: {e}")
     categorized_sentences = {}
-
-# -----------------------------------------------------------------------------
-# Helper de áudio
-# -----------------------------------------------------------------------------
-def resample_waveform(wf: torch.Tensor, sr: int, target_sr=16000) -> torch.Tensor:
-    if sr != target_sr:
-        wf = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)(wf)
-    return wf
-
-def remove_noise_and_normalize(wf: torch.Tensor, sr: int) -> torch.Tensor:
-    arr = wf.squeeze().numpy()
-    cleaned = nr.reduce_noise(y=arr, sr=sr, prop_decrease=0.8)
-    wf2 = torch.tensor(cleaned, dtype=torch.float32).unsqueeze(0)
-    rms = wf2.pow(2).mean().sqrt()
-    return wf2 / rms if rms > 0 else wf2
-
-def process_audio(path: str) -> str:
-    try:
-        wf, sr = torchaudio.load(path)
-        if wf.shape[0] > 1:
-            wf = wf.mean(dim=0, keepdim=True)
-        wf = resample_waveform(wf, sr, 16000)
-        wf = remove_noise_and_normalize(wf, 16000)
-        inp = processor_asr(wf.squeeze(0), sampling_rate=16000, return_tensors="pt")
-        with torch.inference_mode():
-            logits = model_asr(inp.input_values).logits
-        ids = torch.argmax(logits, dim=-1)
-        return processor_asr.decode(ids[0], skip_special_tokens=True)
-    finally:
-        if os.path.exists(path):
-            os.remove(path)
 
 # -----------------------------------------------------------------------------
 # Rotas
@@ -209,13 +164,6 @@ def upload():
         'completeness_score': f"{completeness:.2f}"
     })
 """
-
-@app.route('/speak', methods=['POST'])
-def speak():
-    text = request.form.get('text','')
-    fn = tempfile.mktemp(suffix='.mp3')
-    gTTS(text=text, lang='fr').save(fn)
-    return send_file(fn, as_attachment=True, mimetype='audio/mp3')
 
 # -----------------------------------------------------------------------------
 # Start

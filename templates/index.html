@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -37,49 +38,94 @@
       property="og:image"
       content="https://firebasestorage.googleapis.com/v0/b/banco-de-dados-abc12.firebasestorage.app/o/Screenshot%202025-04-21%20at%2016.10.10.png?alt=media&token=c7909ac1-a11c-4307-8727-24719bb260d0"
     />
-    <meta
-      property="og:url"
-      content="treinadordepronunciadefrances.up.railway.app"
-    />
+    <meta property="og:url" content="treinadordepronunciadefrances.up.railway.app" />
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7645741188042839"
-      crossorigin="anonymous"
-    ></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7645741188042839"
+     crossorigin="anonymous"></script>
+     
+    <!-- Estilos para as dicas de pronúncia -->
+    <style>
+      .pronunciation-hint {
+          margin-bottom: 12px;
+          line-height: 1.6;
+          font-size: 16px;
+      }
+      .highlight {
+          font-weight: bold;
+          padding: 2px 4px;
+          border-radius: 3px;
+          margin: 0 2px;
+          display: inline-block;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      }
+      .vowel-highlight { background-color: rgba(255,0,0,0.1); }
+      .consonant-highlight { background-color: rgba(0,0,255,0.1); }
+      .nasal-highlight { background-color: rgba(153,0,204,0.1); }
+      .diphthong-highlight { background-color: rgba(0,204,0,0.1); }
+      .silent-highlight { background-color: rgba(153,153,153,0.1); }
+      .special-highlight { background-color: rgba(255,153,0,0.1); }
+      .pronunciation-list {
+          list-style-type: none;
+          padding-left: 0;
+      }
+      .pronunciation-list li {
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
+          margin-bottom: 8px;
+      }
+      .pronunciation-list li:last-child {
+          border-bottom: none;
+      }
+      .pronunciation-category {
+          font-weight: bold;
+          margin-top: 16px;
+          margin-bottom: 8px;
+          font-size: 18px;
+      }
+      #hintsList li {
+          margin-bottom: 10px;
+          padding: 8px;
+          border-radius: 4px;
+          background-color: #f8f9fa;
+      }
+      #hintsList li strong {
+          font-size: 1.1em;
+          color: #0d6efd;
+      }
+    </style>
   </head>
 
   <body>
-    <main role="main" class="container">
+    <main  role="main" class="container">
       <div class="flex-md-row">
         <section class="main-content">
-          <header
-            class="header-box container my-4 p-4 position-relative text-center"
-          >
+          <header class="header-box container my-4 p-4 position-relative text-center">
             <!-- ícone à esquerda -->
             <img
               src="https://firebasestorage.googleapis.com/v0/b/banco-de-dados-abc12.firebasestorage.app/o/iconeFranca.svg?alt=media&token=3a4e7282-5ce2-42e0-b5d0-2eab8bacf42f"
               alt="Ícone França"
               class="position-absolute start-0 top-50 translate-middle"
-              style="width: 40px; margin-left: 30px"
+              style="width: 40px;margin-left: 30px;"
             />
-
+          
             <!-- título central -->
             <h1 class="mb-4">Treinador de Pronúncia</h1>
-
+          
             <!-- ícone à direita -->
             <img
               src="https://firebasestorage.googleapis.com/v0/b/banco-de-dados-abc12.firebasestorage.app/o/iconeFranca.svg?alt=media&token=3a4e7282-5ce2-42e0-b5d0-2eab8bacf42f"
               alt="Ícone França"
               class="position-absolute end-0 top-50 translate-middle"
-              style="width: 40px; height: auto"
+              style="width: 40px; height: auto;"
             />
-
+          
             <p class="lead">
               Pratique sua pronúncia com feedback instantâneo em francês.
             </p>
           </header>
+          
+         
 
           <div class="mb-3">
             <label for="category" class="form-label"
@@ -100,71 +146,47 @@
                 <option value="musee">Musee(Museu)</option>
               </optgroup>
 
+              <!-- Santé / Trinquer -->
+              <optgroup label="Expressions Courants">
+                <option value="sante_trinquer">Santé / Trinquer (Saúde / Brindar)</option>
+                <option value="eternuer">Éternuer (Espirrar)</option>
+                <option value="bonne_chance">Bonne chance (Boa sorte)</option>
+                <option value="felicitations">Félicitations (Parabéns)</option>
+                <option value="anniversaire">Anniversaire (Aniversário)</option>
+                <option value="bonne_fete">Bonne fête (Feliz feriado / Feliz dia especial)</option>
+                <option value="bonne_soiree">Bonne soirée (Boa noite)</option>
+                <option value="voyage_trajet">Voyage / Trajet (Viagem / Trajeto)</option>
+                <option value="appetit">Bon appétit (Bom apetite)</option>
+                <option value="fetes_specifiques">Fêtes spécifiques (Festas específicas)</option>
+                <option value="bonne_annee">Bonne année (Feliz ano novo)</option>
+                <option value="condoleances">Condoléances (Condolências)</option>
+                <option value="PROPOSER QUELQUE CHOSE">Faire une Préposition (Fazer uma proposta)</option>
+                <option value="REPONDRE_POSITIVEMENT">Répondre positivement (Responder positivamente)</option>
+                <option value="REPONDRE_NÉGATIVEMENT">Répondre négativement (Responder negativamente)</option>
+                <option value="DEMANDER_DES_INFORMATIONS">Soliciter des informations (Solicitar informações)</option>
+                <option value="DEMANDER_DE_L'AIDE">Phrases pour demander l'aide (Frases para pedir ajuda)</option>
+                <option value="EXCUSES">phrases pour s'excuser (Frases para se desculpar)</option>
+                <option value="REMERCIEMENTS">phrases pour se remercier (Frases para agradecer)</option>
+              </optgroup>
+              
               <!-- Autres -->
               <optgroup label="Autres">
-                 <option value="PROPOSER">
-                  Comment faire une preposition 
-                </option>
-                 <option value="REPONDRE_POSITIVEMENT">
-                  Répondre à quelqun de manière positif 
-                </option>
-                <option value="REPONDRE_NÉGATIVEMENT">
-                  Répondre à quelqun de manière négatif
-                </option>
-                 <option value="DEMANDER_DES_INFORMATIONS">
-                  Comment demander des informations 
-                </option>
-                <option value="DEMANDER_DE_L’AIDE">
-                   Comment demander d'aide  
-                </option>
-                <option value="Connecteurs">
-                  Phrases en utilisant des Connecteurs lógiques 
-                </option>
-
-                <option value="Donner_la_date">
-                  Donner la date (Dar a data)
-                </option>
-                <option value="Donner_l_heure">
-                  Donner l'heure (Dar a hora)
-                </option>
-                <option value="Indiquer_la_frequence">
-                  Indiquer la fréquence (Indicar a frequência)
-                </option>
-                <option value="Exprimer_une_condition">
-                  Exprimer une condition (Expressar uma condição)
-                </option>
-                <option value="Donner_un_conseil">
-                  Donner un conseil (Dar um conselho)
-                </option>
-                <option value="Exprimer_la_condition">
-                  Exprimer la condition (Expressar a condição)
-                </option>
-                <option value="Exprimer_un_souhait">
-                  Exprimer un souhait (Expressar um desejo)
-                </option>
-                <option value="Exprimer_ses_emotions_et_ses_sentiments">
-                  Exprimer ses émotions et ses sentiments (Expressar suas
-                  emoções e sentimentos)
-                </option>
-                <option value="Situer_dans_le_temps_et_exprimer_la_duree">
-                  Situer dans le temps et exprimer la durée (Situar no tempo e
-                  expressar a duração)
-                </option>
-                <option value="Parler_d_Internet_et_des_reseaux_sociaux">
-                  Parler d'Internet et des réseaux sociaux (Falar da Internet e
-                  das redes sociais)
-                </option>
-                <option value="comparatif">
-                  Le comparatif (O comparativo)
-                </option>
-                <option value="superlatif">
-                  Le superlatif (O superlativo)
-                </option>
-                <option value="formation_des_adverbes">
-                  formation des adverbes (Formação dos advérbios)
-                </option>
+                <option value="Donner_la_date">Donner la date (Dar a data)</option>
+                <option value="Donner_l_heure">Donner l'heure (Dar a hora)</option>
+                <option value="Indiquer_la_frequence">Indiquer la fréquence (Indicar a frequência)</option>
+                <option value="Exprimer_une_condition">Exprimer une condition (Expressar uma condição)</option>
+                <option value="Donner_un_conseil">Donner un conseil (Dar um conselho)</option>
+                <option value="Exprimer_la_condition">Exprimer la condition (Expressar a condição)</option>
+                <option value="Exprimer_un_souhait">Exprimer un souhait (Expressar um desejo)</option>
+                <option value="Exprimer_ses_emotions_et_ses_sentiments">Exprimer ses émotions et ses sentiments (Expressar suas emoções e sentimentos)</option>
+                <option value="Situer_dans_le_temps_et_exprimer_la_duree">Situer dans le temps et exprimer la durée (Situar no tempo e expressar a duração)</option>
+                <option value="Parler_d_Internet_et_des_reseaux_sociaux">Parler d'Internet et des réseaux sociaux (Falar da Internet e das redes sociais)</option>
+                <option value="comparatif">Le comparatif (O comparativo)</option>
+                <option value="superlatif">Le superlatif (O superlativo)</option>
+                <option value="formation_des_adverbes">formation des adverbes (Formação dos advérbios)</option>
                 <option value="negation">La negation (A negação)</option>
               </optgroup>
+              
 
               <!-- Grammaire -->
               <optgroup label="Grammaire">
@@ -243,25 +265,6 @@
             >
               Gerar uma frase
             </button>
-            <!-- Botão de gravação comentado conforme solicitado -->
-            <!--
-            <button
-              class="btn btn-danger"
-              id="recordButton"
-              onclick="toggleRecording()"
-            >
-              <span
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-              >
-                Falar frase
-                <i class="material-icons" id="recordIcon">mic</i>
-              </span>
-            </button>
-            -->
             <button
               class="btn btn-primary"
               id="speakButton"
@@ -278,58 +281,16 @@
 
           <div id="hintsContainer" class="mt-3">
             <h4>Dicas de pronunciação:</h4>
-            <ul id="hintsList"></ul>
+            <ul id="hintsList" class="pronunciation-list"></ul>
           </div>
 
-          <!-- Elemento para exibir as mensagens de status - comentado -->
-          <!--
-          <div
-            class="uploading-message mt-3"
-            id="uploadingMessage"
-            style="display: none"
-          >
-            <span id="uploadingText">Enviando audio.. aguarde</span>
-            <progress
-              id="uploadProgress"
-              value="0"
-              max="100"
-              style="width: 100%"
-            ></progress>
-          </div>
-          -->
-
-          <!-- Seção de resultado comentada conforme solicitado -->
-          <!--
-          <div class="result mt-4">
-            <h3>Feedback:</h3>
-            <p>Taxa de sucesso na pronúncia: <span id="ratio"></span>%</p>
-            <div class="diff" id="diff"></div>
-            <br />
-            <p>Taxa de completude da pronúncia: <span id="completeness"></span>%</p>
-          </div>
-          -->
           <div id="audioContainer" class="mt-4"></div>
         </section>
-        <!-- Caixa de feedback comentada conforme solicitado -->
-        <!--
         <div class="feedback-box" id="feedbackBox">
           <p id="feedbackContent">
             Clique em cima de uma palavra para ver a pronúncia
           </p>
         </div>
-        -->
-        <div class="feedback-box">
-  <ul>
-    <h3>Organização de cores da pronúncia por categoria fonética:</h3>
-    <li><strong>Vogais:</strong> tons fortes de vermelho e laranja (alta visibilidade)</li>
-    <li><strong>Consoantes:</strong> tons distintos e intensos de azul</li>
-    <li><strong>Nasais:</strong> tons vibrantes de roxo</li>
-    <li><strong>Ditongos:</strong> verdes contrastantes e vivos</li>
-    <li><strong>Sons mudos:</strong> tons escuros de amarelo e marrom visíveis</li>
-    <li><strong>Casos especiais:</strong> cores variadas e de alto contraste</li>
-  </ul>
-</div>
-
       </div>
     </main>
 
@@ -351,21 +312,20 @@
 
         // Define uma opção aleatória
         categorySelect.selectedIndex = randomIndex;
+        
+        // Inicializa as vozes
+        initVoices();
       });
 
       // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
       function disableButtons() {
         document.getElementById("speakButton").disabled = true;
         document.getElementById("generateButton").disabled = true;
-        // Botão de gravação comentado
-        // document.getElementById("recordButton").disabled = true;
       }
 
       function enableButtons() {
         document.getElementById("speakButton").disabled = false;
         document.getElementById("generateButton").disabled = false;
-        // Botão de gravação comentado
-        // document.getElementById("recordButton").disabled = false;
       }
 
       function showMessage(message) {
@@ -418,29 +378,14 @@
             }
 
             // Agora sim podemos usar .split
-            const pronunciations = data.pronunciations.split("\n");
-            const pronunciationElement =
-              document.getElementById("pronunciation");
-            pronunciationElement.innerHTML = "";
-
-            // Adiciona cada linha de pronúncia como um parágrafo
-            pronunciations.forEach((pron) => {
-              if (pron.trim()) {
-                const p = document.createElement("p");
-                p.textContent = pron;
-                pronunciationElement.appendChild(p);
-              }
-            });
-
-            // Busca dicas de pronúncia
-            fetchHints(text);
+            const pronunciations = data.pronunciations;
+            document.getElementById("pronunciation").innerText = pronunciations;
           })
           .catch((error) => {
             console.error("Erro ao buscar pronúncia:", error);
           });
-      }
 
-      function fetchHints(text) {
+        // Busca dicas de pronúncia
         fetch("/hints", {
           method: "POST",
           headers: {
@@ -450,21 +395,23 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            if (data.error) {
+              console.error("Erro retornado pelo servidor /hints:", data.error);
+              return;
+            }
+
             const hintsList = document.getElementById("hintsList");
-            hintsList.innerHTML = "";
+            hintsList.innerHTML = ""; // Limpa a lista
 
             if (data.hints && data.hints.length > 0) {
               data.hints.forEach((hint) => {
                 const li = document.createElement("li");
-                // Aqui está a correção: não usar escapeHtml nas explicações
-                li.innerHTML = `<strong>${escapeHtml(
-                  hint.word
-                )}</strong>: ${hint.explanations.join(", ")}`;
+                // Importante: Usar innerHTML em vez de innerText para renderizar as tags HTML
+                li.innerHTML = `<strong>${escapeHtml(hint.word)}</strong>: ${hint.explanations.join(", ")}`;
                 hintsList.appendChild(li);
               });
-              document.getElementById("hintsContainer").style.display = "block";
             } else {
-              document.getElementById("hintsContainer").style.display = "none";
+              hintsList.innerHTML = "<li>Nenhuma dica disponível.</li>";
             }
           })
           .catch((error) => {
@@ -473,9 +420,10 @@
       }
 
       function generateSentence() {
-        const category = document.getElementById("category").value;
         disableButtons();
         showMessage("Gerando frase...");
+
+        const category = document.getElementById("category").value;
 
         fetch("/get_sentence", {
           method: "POST",
@@ -487,217 +435,259 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.error) {
-              showMessage("Erro: " + data.error);
+              console.error(
+                "Erro retornado pelo servidor /get_sentence:",
+                data.error
+              );
+              showMessage("Erro ao gerar frase. Tente novamente.");
               return;
             }
+
             document.getElementById("text").value = data.fr_sentence;
             fetchPronunciation(data.fr_sentence);
             hideMessage();
           })
           .catch((error) => {
-            showMessage("Erro ao gerar frase: " + error);
+            console.error("Erro ao gerar frase:", error);
+            showMessage("Erro ao gerar frase. Tente novamente.");
           })
           .finally(() => {
             enableButtons();
           });
       }
 
-      // Função para falar o texto
+      // Variáveis globais para armazenar as vozes
+      let allVoices = [];
+      let frenchVoices = [];
+      let voicesLoaded = false;
+      let voiceLoadAttempts = 0;
+      const MAX_VOICE_LOAD_ATTEMPTS = 5;
+
+      // Inicializa as vozes
+      function initVoices() {
+        // Função para processar as vozes quando estiverem disponíveis
+        function processVoices() {
+          allVoices = window.speechSynthesis.getVoices();
+          
+          // Filtrar vozes francesas
+          frenchVoices = allVoices.filter(voice => 
+            voice.lang.startsWith('fr') || 
+            voice.name.toLowerCase().includes('french') || 
+            voice.name.toLowerCase().includes('français')
+          );
+          
+          console.log("Vozes disponíveis:", allVoices.length);
+          console.log("Vozes francesas encontradas:", frenchVoices.length);
+          
+          if (frenchVoices.length > 0) {
+            frenchVoices.forEach(voice => {
+              console.log(`Voz francesa: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
+            });
+            voicesLoaded = true;
+          } else {
+            console.warn("Nenhuma voz francesa encontrada!");
+            
+            // Tentar novamente se não encontrou vozes francesas
+            if (voiceLoadAttempts < MAX_VOICE_LOAD_ATTEMPTS) {
+              voiceLoadAttempts++;
+              console.log(`Tentativa ${voiceLoadAttempts} de carregar vozes francesas...`);
+              setTimeout(processVoices, 500);
+            }
+          }
+        }
+
+        // Para Chrome e Edge
+        if (window.speechSynthesis) {
+          if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = processVoices;
+          }
+          
+          // Tenta carregar as vozes imediatamente (para Safari)
+          setTimeout(() => {
+            if (!voicesLoaded) {
+              processVoices();
+            }
+          }, 100);
+          
+          // Força a inicialização das vozes
+          window.speechSynthesis.cancel();
+        }
+      }
+
+      // Função para encontrar a melhor voz francesa disponível
+      function getBestFrenchVoice() {
+        if (frenchVoices.length === 0) {
+          // Se ainda não carregou as vozes, tenta carregar novamente
+          allVoices = window.speechSynthesis.getVoices();
+          frenchVoices = allVoices.filter(voice => 
+            voice.lang.startsWith('fr') || 
+            voice.name.toLowerCase().includes('french') || 
+            voice.name.toLowerCase().includes('français')
+          );
+        }
+        
+        if (frenchVoices.length === 0) {
+          console.warn("Nenhuma voz francesa encontrada após nova tentativa.");
+          
+          // Último recurso: procurar por qualquer voz que possa ser usada
+          const browserLanguage = navigator.language || navigator.userLanguage;
+          console.log("Idioma do navegador:", browserLanguage);
+          
+          // Tentar encontrar uma voz no idioma do navegador
+          if (browserLanguage.startsWith('fr')) {
+            const browserVoices = allVoices.filter(voice => voice.lang.startsWith(browserLanguage));
+            if (browserVoices.length > 0) {
+              console.log(`Usando voz do idioma do navegador: ${browserVoices[0].name}`);
+              return browserVoices[0];
+            }
+          }
+          
+          // Se não encontrar nenhuma voz francesa, usar a primeira voz disponível
+          if (allVoices.length > 0) {
+            console.log(`Usando primeira voz disponível: ${allVoices[0].name}`);
+            return allVoices[0];
+          }
+          
+          return null;
+        }
+        
+        // Prioridade 1: Vozes francesas nativas (localService: true)
+        const nativeFrenchVoices = frenchVoices.filter(voice => voice.localService);
+        if (nativeFrenchVoices.length > 0) {
+          return nativeFrenchVoices[0];
+        }
+        
+        // Prioridade 2: Vozes com código de idioma fr-FR
+        const frFRVoices = frenchVoices.filter(voice => voice.lang === 'fr-FR');
+        if (frFRVoices.length > 0) {
+          return frFRVoices[0];
+        }
+        
+        // Prioridade 3: Qualquer voz francesa
+        return frenchVoices[0];
+      }
+
+      // Implementação da síntese de voz usando Web Speech API
       function speakText() {
         const text = document.getElementById("text").value.trim();
+        
         if (!text) {
-          showMessage("Por favor, insira um texto para ouvir.");
+          showMessage("Por favor, insira ou gere um texto para ouvir.");
           return;
         }
-
-        disableButtons();
-        showMessage("Gerando áudio...");
-
-        fetch("/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(text),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Erro ao gerar áudio");
-            }
-            return response.blob();
-          })
-          .then((blob) => {
-            const audioUrl = URL.createObjectURL(blob);
-            const audioContainer = document.getElementById("audioContainer");
-            audioContainer.innerHTML = "";
-
-            const audio = document.createElement("audio");
-            audio.controls = true;
-            audio.src = audioUrl;
-            audio.style.width = "100%";
-            audioContainer.appendChild(audio);
-
-            hideMessage();
-            audio.play();
-          })
-          .catch((error) => {
-            showMessage("Erro: " + error);
-          })
-          .finally(() => {
-            enableButtons();
-          });
-      }
-
-      /* 
-      // Código de gravação e avaliação comentado conforme solicitado
-      let mediaRecorder;
-      let audioChunks = [];
-      let isRecording = false;
-
-      function toggleRecording() {
-        if (isRecording) {
-          stopRecording();
-        } else {
-          startRecording();
-        }
-      }
-
-      function startRecording() {
-        const text = document.getElementById("text").value.trim();
-        if (!text) {
-          showMessage("Por favor, insira ou gere um texto antes de gravar.");
-          return;
-        }
-
-        navigator.mediaDevices
-          .getUserMedia({ audio: true })
-          .then((stream) => {
-            audioChunks = [];
-            mediaRecorder = new MediaRecorder(stream);
-
-            mediaRecorder.ondataavailable = (e) => {
-              audioChunks.push(e.data);
-            };
-
-            mediaRecorder.onstop = () => {
-              const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-              uploadAudio(audioBlob);
-            };
-
-            mediaRecorder.start();
-            isRecording = true;
-            document.getElementById("recordButton").classList.add("recording");
-            document.getElementById("recordIcon").textContent = "stop";
-            disableButtons();
-            document.getElementById("recordButton").disabled = false;
-            showMessage("Gravando... Clique novamente para parar.");
-          })
-          .catch((error) => {
-            console.error("Erro ao acessar microfone:", error);
-            showMessage(
-              "Erro ao acessar microfone. Verifique as permissões do navegador."
-            );
-          });
-      }
-
-      function stopRecording() {
-        if (mediaRecorder && isRecording) {
-          mediaRecorder.stop();
-          isRecording = false;
-          document.getElementById("recordButton").classList.remove("recording");
-          document.getElementById("recordIcon").textContent = "mic";
-          showMessage("Processando áudio...");
-        }
-      }
-
-      function uploadAudio(audioBlob) {
-        const text = document.getElementById("text").value;
-        const formData = new FormData();
-        formData.append("audio", audioBlob, "recording.wav");
-        formData.append("text", text);
-
-        // Mostrar mensagem de upload
-        document.getElementById("uploadingMessage").style.display = "block";
-        document.getElementById("uploadingText").textContent =
-          "Enviando áudio... aguarde";
-        document.getElementById("uploadProgress").value = 0;
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/upload", true);
-
-        // Monitorar progresso do upload
-        xhr.upload.onprogress = function (e) {
-          if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            document.getElementById("uploadProgress").value = percentComplete;
-          }
-        };
-
-        xhr.onload = function () {
-          document.getElementById("uploadingMessage").style.display = "none";
-          enableButtons();
-
-          if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            document.getElementById("ratio").textContent = response.ratio;
-            document.getElementById("diff").innerHTML = response.diff_html;
-            document.getElementById("completeness").textContent =
-              response.completeness_score;
-
-            // Adicionar evento de clique para cada palavra
-            const words = document.querySelectorAll(".word");
-            words.forEach((word) => {
-              word.addEventListener("click", function () {
-                const wordText = this.textContent;
-                const feedbackBox = document.getElementById("feedbackBox");
-                const feedbackContent =
-                  document.getElementById("feedbackContent");
-
-                if (response.feedback && response.feedback[wordText]) {
-                  const fb = response.feedback[wordText];
-                  feedbackContent.innerHTML = `
-                    <strong>${escapeHtml(wordText)}</strong><br>
-                    Pronúncia correta: ${escapeHtml(fb.correct)}<br>
-                    Sua pronúncia: ${escapeHtml(fb.user || "não detectada")}<br>
-                    ${fb.suggestion ? "Sugestão: " + escapeHtml(fb.suggestion) : ""}
-                  `;
-                } else if (
-                  response.pronunciations &&
-                  response.pronunciations[wordText]
-                ) {
-                  const pron = response.pronunciations[wordText];
-                  feedbackContent.innerHTML = `
-                    <strong>${escapeHtml(wordText)}</strong><br>
-                    Pronúncia correta: ${escapeHtml(pron.correct)}<br>
-                    ${
-                      pron.user
-                        ? "Sua pronúncia: " + escapeHtml(pron.user)
-                        : ""
-                    }
-                  `;
-                } else {
-                  feedbackContent.textContent = `Não há informações detalhadas para "${wordText}"`;
-                }
-
-                feedbackBox.style.display = "block";
-              });
-            });
-
-            hideMessage();
+        
+        // Verifica se o navegador suporta a API de síntese de voz
+        if ('speechSynthesis' in window) {
+          disableButtons();
+          showMessage("Reproduzindo áudio...");
+          
+          // Cancela qualquer fala anterior
+          window.speechSynthesis.cancel();
+          
+          // Cria um novo objeto de fala
+          const utterance = new SpeechSynthesisUtterance(text);
+          
+          // Define o idioma como francês
+          utterance.lang = 'fr-FR';
+          
+          // Tenta obter a melhor voz francesa
+          const bestVoice = getBestFrenchVoice();
+          
+          if (bestVoice) {
+            utterance.voice = bestVoice;
+            console.log(`Usando voz francesa: ${bestVoice.name} (${bestVoice.lang})`);
           } else {
-            showMessage("Erro ao processar áudio: " + xhr.statusText);
+            console.warn("Nenhuma voz francesa encontrada. Usando configuração padrão com idioma fr-FR.");
           }
-        };
-
-        xhr.onerror = function () {
-          document.getElementById("uploadingMessage").style.display = "none";
-          enableButtons();
-          showMessage("Erro de rede ao enviar áudio.");
-        };
-
-        xhr.send(formData);
+          
+          // Ajusta a taxa e o tom para melhorar a qualidade
+          utterance.rate = 0.9;  // Um pouco mais lento que o normal
+          utterance.pitch = 1.0; // Tom normal
+          
+          // Configura eventos para saber quando a fala terminou
+          utterance.onend = function() {
+            console.log("Síntese de voz concluída com sucesso");
+            enableButtons();
+            hideMessage();
+          };
+          
+          utterance.onerror = function(event) {
+            console.error("Erro na síntese de voz:", event);
+            showMessage("Erro ao reproduzir áudio. Tente novamente.");
+            enableButtons();
+          };
+          
+          // Inicia a síntese de voz
+          window.speechSynthesis.speak(utterance);
+          
+          // Workaround para o bug do Chrome/Edge que para após 15 segundos
+          if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Edge') !== -1) {
+            const resumeInfinity = setInterval(() => {
+              if (!window.speechSynthesis.speaking) {
+                clearInterval(resumeInfinity);
+                return;
+              }
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            }, 10000);
+          }
+          
+          // Workaround para Safari que às vezes não inicia a fala
+          if (navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Chrome') === -1) {
+            setTimeout(() => {
+              if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+              }
+            }, 250);
+            
+            // Workaround adicional para Safari - forçar a seleção de voz
+            if (!utterance.voice) {
+              const safariVoices = window.speechSynthesis.getVoices();
+              const frenchSafariVoice = safariVoices.find(v => v.lang.startsWith('fr'));
+              if (frenchSafariVoice) {
+                utterance.voice = frenchSafariVoice;
+                console.log("Safari: Forçando voz francesa:", frenchSafariVoice.name);
+              }
+            }
+          }
+        } else {
+          showMessage("Seu navegador não suporta síntese de voz. Tente usar Chrome, Edge ou Safari.");
+        }
       }
-      */
+
+      // Adiciona um evento para cancelar a fala se o usuário clicar em outro lugar
+      document.addEventListener('click', function(event) {
+        // Se o clique não foi no botão de falar e há uma síntese em andamento
+        if (event.target.id !== 'speakButton' && window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+          enableButtons();
+          hideMessage();
+        }
+      });
+      
+      // Função para testar as vozes disponíveis
+      function testVoices() {
+        console.log("Testando vozes disponíveis...");
+        const voices = window.speechSynthesis.getVoices();
+        console.log(`Total de vozes: ${voices.length}`);
+        
+        voices.forEach((voice, index) => {
+          console.log(`Voz ${index}: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
+        });
+        
+        // Testar se há vozes francesas
+        const frenchVoices = voices.filter(voice => voice.lang.startsWith('fr'));
+        console.log(`Vozes francesas: ${frenchVoices.length}`);
+        
+        frenchVoices.forEach((voice, index) => {
+          console.log(`Voz francesa ${index}: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
+        });
+        
+        return frenchVoices.length > 0;
+      }
+      
+      // Executar teste de vozes após um tempo
+      setTimeout(testVoices, 2000);
     </script>
   </body>
 </html>
