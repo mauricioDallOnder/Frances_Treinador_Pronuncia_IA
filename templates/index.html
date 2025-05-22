@@ -44,61 +44,12 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7645741188042839"
      crossorigin="anonymous"></script>
      
-    <!-- Estilos para as dicas de pronúncia -->
-    <style>
-      .pronunciation-hint {
-          margin-bottom: 12px;
-          line-height: 1.6;
-          font-size: 16px;
-      }
-      .highlight {
-          font-weight: bold;
-          padding: 2px 4px;
-          border-radius: 3px;
-          margin: 0 2px;
-          display: inline-block;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      }
-      .vowel-highlight { background-color: rgba(255,0,0,0.1); }
-      .consonant-highlight { background-color: rgba(0,0,255,0.1); }
-      .nasal-highlight { background-color: rgba(153,0,204,0.1); }
-      .diphthong-highlight { background-color: rgba(0,204,0,0.1); }
-      .silent-highlight { background-color: rgba(153,153,153,0.1); }
-      .special-highlight { background-color: rgba(255,153,0,0.1); }
-      .pronunciation-list {
-          list-style-type: none;
-          padding-left: 0;
-      }
-      .pronunciation-list li {
-          padding: 8px 0;
-          border-bottom: 1px solid #eee;
-          margin-bottom: 8px;
-      }
-      .pronunciation-list li:last-child {
-          border-bottom: none;
-      }
-      .pronunciation-category {
-          font-weight: bold;
-          margin-top: 16px;
-          margin-bottom: 8px;
-          font-size: 18px;
-      }
-      #hintsList li {
-          margin-bottom: 10px;
-          padding: 8px;
-          border-radius: 4px;
-          background-color: #f8f9fa;
-      }
-      #hintsList li strong {
-          font-size: 1.1em;
-          color: #0d6efd;
-      }
-    </style>
+   
   </head>
 
   <body>
     <main  role="main" class="container">
-      <div class="flex-md-row">
+      <div>
         <section class="main-content">
           <header class="header-box container my-4 p-4 position-relative text-center">
             <!-- ícone à esquerda -->
@@ -131,7 +82,7 @@
             <label for="category" class="form-label"
               >Selecione uma categoria :</label
             >
-            <select class="form-select" id="category" name="category">
+             <select class="form-select" id="category" name="category">
               <!-- Cuisine et transport -->
               <optgroup label="Pharses Metro-boulout-dôdo">
                 <option value="transport">Transport(Transporte)</option>
@@ -146,47 +97,71 @@
                 <option value="musee">Musee(Museu)</option>
               </optgroup>
 
-              <!-- Santé / Trinquer -->
-              <optgroup label="Expressions Courants">
-                <option value="sante_trinquer">Santé / Trinquer (Saúde / Brindar)</option>
-                <option value="eternuer">Éternuer (Espirrar)</option>
-                <option value="bonne_chance">Bonne chance (Boa sorte)</option>
-                <option value="felicitations">Félicitations (Parabéns)</option>
-                <option value="anniversaire">Anniversaire (Aniversário)</option>
-                <option value="bonne_fete">Bonne fête (Feliz feriado / Feliz dia especial)</option>
-                <option value="bonne_soiree">Bonne soirée (Boa noite)</option>
-                <option value="voyage_trajet">Voyage / Trajet (Viagem / Trajeto)</option>
-                <option value="appetit">Bon appétit (Bom apetite)</option>
-                <option value="fetes_specifiques">Fêtes spécifiques (Festas específicas)</option>
-                <option value="bonne_annee">Bonne année (Feliz ano novo)</option>
-                <option value="condoleances">Condoléances (Condolências)</option>
-                <option value="PROPOSER QUELQUE CHOSE">Faire une Préposition (Fazer uma proposta)</option>
-                <option value="REPONDRE_POSITIVEMENT">Répondre positivement (Responder positivamente)</option>
-                <option value="REPONDRE_NÉGATIVEMENT">Répondre négativement (Responder negativamente)</option>
-                <option value="DEMANDER_DES_INFORMATIONS">Soliciter des informations (Solicitar informações)</option>
-                <option value="DEMANDER_DE_L'AIDE">Phrases pour demander l'aide (Frases para pedir ajuda)</option>
-                <option value="EXCUSES">phrases pour s'excuser (Frases para se desculpar)</option>
-                <option value="REMERCIEMENTS">phrases pour se remercier (Frases para agradecer)</option>
-              </optgroup>
-              
               <!-- Autres -->
               <optgroup label="Autres">
-                <option value="Donner_la_date">Donner la date (Dar a data)</option>
-                <option value="Donner_l_heure">Donner l'heure (Dar a hora)</option>
-                <option value="Indiquer_la_frequence">Indiquer la fréquence (Indicar a frequência)</option>
-                <option value="Exprimer_une_condition">Exprimer une condition (Expressar uma condição)</option>
-                <option value="Donner_un_conseil">Donner un conseil (Dar um conselho)</option>
-                <option value="Exprimer_la_condition">Exprimer la condition (Expressar a condição)</option>
-                <option value="Exprimer_un_souhait">Exprimer un souhait (Expressar um desejo)</option>
-                <option value="Exprimer_ses_emotions_et_ses_sentiments">Exprimer ses émotions et ses sentiments (Expressar suas emoções e sentimentos)</option>
-                <option value="Situer_dans_le_temps_et_exprimer_la_duree">Situer dans le temps et exprimer la durée (Situar no tempo e expressar a duração)</option>
-                <option value="Parler_d_Internet_et_des_reseaux_sociaux">Parler d'Internet et des réseaux sociaux (Falar da Internet e das redes sociais)</option>
-                <option value="comparatif">Le comparatif (O comparativo)</option>
-                <option value="superlatif">Le superlatif (O superlativo)</option>
-                <option value="formation_des_adverbes">formation des adverbes (Formação dos advérbios)</option>
+                 <option value="PROPOSER">
+                  Comment faire une preposition 
+                </option>
+                 <option value="REPONDRE_POSITIVEMENT">
+                  Répondre à quelqun de manière positif 
+                </option>
+                <option value="REPONDRE_NÉGATIVEMENT">
+                  Répondre à quelqun de manière négatif
+                </option>
+                 <option value="DEMANDER_DES_INFORMATIONS">
+                  Comment demander des informations 
+                </option>
+                <option value="DEMANDER_DE_L’AIDE">
+                   Comment demander d'aide  
+                </option>
+                <option value="Connecteurs">
+                  Phrases en utilisant des Connecteurs lógiques 
+                </option>
+
+                <option value="Donner_la_date">
+                  Donner la date (Dar a data)
+                </option>
+                <option value="Donner_l_heure">
+                  Donner l'heure (Dar a hora)
+                </option>
+                <option value="Indiquer_la_frequence">
+                  Indiquer la fréquence (Indicar a frequência)
+                </option>
+                <option value="Exprimer_une_condition">
+                  Exprimer une condition (Expressar uma condição)
+                </option>
+                <option value="Donner_un_conseil">
+                  Donner un conseil (Dar um conselho)
+                </option>
+                <option value="Exprimer_la_condition">
+                  Exprimer la condition (Expressar a condição)
+                </option>
+                <option value="Exprimer_un_souhait">
+                  Exprimer un souhait (Expressar um desejo)
+                </option>
+                <option value="Exprimer_ses_emotions_et_ses_sentiments">
+                  Exprimer ses émotions et ses sentiments (Expressar suas
+                  emoções e sentimentos)
+                </option>
+                <option value="Situer_dans_le_temps_et_exprimer_la_duree">
+                  Situer dans le temps et exprimer la durée (Situar no tempo e
+                  expressar a duração)
+                </option>
+                <option value="Parler_d_Internet_et_des_reseaux_sociaux">
+                  Parler d'Internet et des réseaux sociaux (Falar da Internet e
+                  das redes sociais)
+                </option>
+                <option value="comparatif">
+                  Le comparatif (O comparativo)
+                </option>
+                <option value="superlatif">
+                  Le superlatif (O superlativo)
+                </option>
+                <option value="formation_des_adverbes">
+                  formation des adverbes (Formação dos advérbios)
+                </option>
                 <option value="negation">La negation (A negação)</option>
               </optgroup>
-              
 
               <!-- Grammaire -->
               <optgroup label="Grammaire">
@@ -238,6 +213,7 @@
                 <option value="Phrases_avec_y">Phrases avec "y"</option>
               </optgroup>
             </select>
+
           </div>
 
           <div class="mb-3">
@@ -286,11 +262,7 @@
 
           <div id="audioContainer" class="mt-4"></div>
         </section>
-        <div class="feedback-box" id="feedbackBox">
-          <p id="feedbackContent">
-            Clique em cima de uma palavra para ver a pronúncia
-          </p>
-        </div>
+       
       </div>
     </main>
 
@@ -591,6 +563,7 @@
           utterance.lang = 'fr-FR';
           
           // Tenta obter a melhor voz francesa
+          //const bestVoice = getBestFrenchVoice();
           const bestVoice = getBestFrenchVoice();
           
           if (bestVoice) {
