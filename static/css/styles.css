@@ -17,6 +17,7 @@ body {
   border-radius: 20px;
   padding: 20px;
   margin-top: 20px;
+  width: 100%;
 }
 .main-content, .feedback-box {
   margin-bottom: 20px;

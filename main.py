@@ -159,6 +159,7 @@ def get_sentence():
         logger.exception("Erro em /get_sentence")
         return jsonify({'error': str(e)}), 500
 
+"""
 @app.route('/upload', methods=['POST'])
 def upload():
     file = request.files.get('audio')
@@ -207,6 +208,7 @@ def upload():
         'feedback': feedback,
         'completeness_score': f"{completeness:.2f}"
     })
+"""
 
 @app.route('/speak', methods=['POST'])
 def speak():
