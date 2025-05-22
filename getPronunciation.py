@@ -1,7 +1,7 @@
 import re
 import random
 import html
-from typing import List, Tuple, Dict, Pattern, Optional
+from typing import List, Tuple, Dict, Pattern, Optional, Any
 
 # -------------------------------------------------------------
 # Variáveis de apoio
@@ -443,6 +443,8 @@ SPECIFIC_WORDS = {
     "ses": "Pronuncia-se 'sê'.",
     "est-ce que": "Pronuncia-se 'és ke'.",
     "qu'est-ce que": "Pronuncia-se 'kés ke'.",
+    "c'est": "Pronuncia-se 'sé'.",
+    "j'aie": "Pronuncia-se 'je' (e fechado).",
 }
 
 # -------------------------------------------------------------
@@ -451,218 +453,139 @@ SPECIFIC_WORDS = {
 def make_highlight(m: re.Match, template: str, category: str) -> Tuple[int, int, str, str]:
     color = get_color(category)
     text = html.escape(m.group(0))
-    span = f'<span class="highlight {category}-highlight" style="color:{color}; font-weight:bold; font-size:1.1em;">{text}</span>'
-    explanation = template.format(match=span)
-    return m.start(), m.end(), span, explanation
+    span = f'<span class="highlight" style="color:{color}">{text}</span>'
+    explanation = template.format(match=text)
+    return (m.start(), m.end(), span, explanation)
 
-def find_special_cases(word: str) -> List[Tuple[re.Match, str, str]]:
-    lc = word.lower()
-    specials: List[Tuple[re.Match, str, str]] = []
-
-    # Verificar se a palavra está no dicionário de palavras específicas
-    if lc in SPECIFIC_WORDS:
-        m = re.search(r"^.*$", word)
-        if m:
-            specials.append((m, SPECIFIC_WORDS[lc], 'special'))
-        return specials
-
-    # j'ai → pronúncia "jê"
-    if lc == "j'ai":
-        m = re.search(r"ai", word)
-        if m:
-            specials.append((m, 'Em "j\'ai", pronuncia-se aproximadamente "jê".', 'vowels'))
-
-    # chats → s mudo
-    if lc.endswith('chats'):
-        m = re.search(r's$', word)
-        if m:
-            specials.append((m, 'Em "chats", o {match} final é mudo → "chá".', 'silent'))
-
-    # grand|quand → liaison 'd'
-    if re.search(r'(grand|quand)$', lc):
-        m = re.search(r'd$', word)
-        if m:
-            specials.append((m, 'Em liaison, o {match} final soa "t".', 'consonants'))
-
-    # Liaison em números
-    if lc in ['deux', 'trois', 'six', 'dix']:
-        m = re.search(r'x$', word)
-        if m:
-            specials.append((m, 'Em liaison, o {match} final soa "z".', 'consonants'))
-
-    # Liaison em "vingt"
-    if lc == 'vingt':
-        m = re.search(r't$', word)
-        if m:
-            specials.append((m, 'Em liaison, o {match} final é pronunciado.', 'consonants'))
-
-    # Liaison em "cent"
-    if lc == 'cent':
-        m = re.search(r't$', word)
-        if m:
-            specials.append((m, 'Em liaison, o {match} final é pronunciado.', 'consonants'))
-
-    return specials
-
-# -------------------------------------------------------------
-# Fluxo Principal de Matching
-# -------------------------------------------------------------
-def get_pronunciation_hints(word: str) -> Dict[str, List[str] or str]:
-    raw_matches: List[Tuple[int, int, str, str]] = []
-
-    # 1) especiais
-    for m, tmpl, category in find_special_cases(word):
-        raw_matches.append(make_highlight(m, tmpl, category))
-
-    # 2) gerais
-    for pattern, tmpl, category in GENERAL_PATTERNS:
+def find_patterns_in_word(word: str) -> List[Tuple[int, int, str, str]]:
+    """Encontra padrões fonéticos em uma palavra."""
+    results = []
+    
+    # Verificar palavras específicas primeiro
+    word_lower = word.lower()
+    if word_lower in SPECIFIC_WORDS:
+        # Para palavras específicas, destacamos a palavra inteira
+        color = get_color('special')
+        span = f'<span class="highlight" style="color:{color}">{html.escape(word)}</span>'
+        explanation = SPECIFIC_WORDS[word_lower]
+        results.append((0, len(word), span, explanation))
+        return results
+    
+    # Verificar padrões gerais
+    for pattern, template, category in GENERAL_PATTERNS:
         for m in pattern.finditer(word):
-            raw_matches.append(make_highlight(m, tmpl, category))
+            results.append(make_highlight(m, template, category))
+    
+    # Ordenar por posição inicial
+    results.sort(key=lambda x: x[0])
+    return results
 
-    # 3) remover sobreposições
-    raw_matches.sort(key=lambda x: (x[0], -(x[1] - x[0])))
-    final_matches: List[Tuple[int, int, str, str]] = []
-    for start, end, span, expl in raw_matches:
-        if not any(not (end <= s or start >= e) for s, e, *_ in final_matches):
-            final_matches.append((start, end, span, expl))
+def apply_highlights(word: str, highlights: List[Tuple[int, int, str, str]]) -> Tuple[str, List[str]]:
+    """Aplica destaques ao texto e retorna explicações."""
+    if not highlights:
+        return word, []
+    
+    # Ordenar destaques por posição inicial (decrescente)
+    highlights.sort(key=lambda x: x[0], reverse=True)
+    
+    # Aplicar destaques
+    result = word
+    explanations = []
+    for start, end, span, explanation in highlights:
+        result = result[:start] + span + result[end:]
+        if explanation not in explanations:
+            explanations.append(explanation)
+    
+    return result, explanations
 
-    # 4) sem matches
-    if not final_matches:
-        return {"word": word, "highlighted_word": html.escape(word), "explanations": []}
-
-    # 5) construir resultado
-    final_matches.sort(key=lambda x: x[0])
-    highlighted = []
-    last = 0
-    explanations: List[str] = []
-    for start, end, span, expl in final_matches:
-        highlighted.append(html.escape(word[last:start]))
-        highlighted.append(span)
-        explanations.append(expl)
-        last = end
-    highlighted.append(html.escape(word[last:]))
-
+# -------------------------------------------------------------
+# Função principal para obter dicas de pronúncia
+# -------------------------------------------------------------
+def get_pronunciation_hints(word: str) -> Dict[str, Any]:
+    """
+    Obtém dicas de pronúncia para uma palavra.
+    
+    Args:
+        word: A palavra para analisar
+        
+    Returns:
+        Um dicionário com a palavra, explicações e palavra destacada
+    """
+    word = word.strip()
+    if not word:
+        return {"word": "", "explanations": [], "highlighted": ""}
+    
+    # Remover pontuação no início e fim
+    word = re.sub(r'^[^\w]+|[^\w]+$', '', word)
+    if not word:
+        return {"word": "", "explanations": [], "highlighted": ""}
+    
+    # Encontrar padrões
+    highlights = find_patterns_in_word(word)
+    
+    # Aplicar destaques
+    highlighted, explanations = apply_highlights(word, highlights)
+    
     return {
         "word": word,
-        "highlighted_word": ''.join(highlighted),
-        "explanations": explanations
+        "explanations": explanations,
+        "highlighted": highlighted
     }
 
 # -------------------------------------------------------------
-# Função para obter dicas de pronúncia para frases inteiras
+# Funções adicionais para análise de frases completas
 # -------------------------------------------------------------
-def get_sentence_pronunciation_hints(sentence: str) -> List[Dict[str, List[str] or str]]:
+def get_sentence_pronunciation_hints(sentence: str) -> List[Dict[str, Any]]:
     """
-    Obtém dicas de pronúncia para cada palavra em uma frase.
+    Obtém dicas de pronúncia para todas as palavras em uma frase.
     
     Args:
         sentence: A frase para analisar
         
     Returns:
-        Lista de dicionários com dicas de pronúncia para cada palavra
+        Uma lista de dicionários com dicas para cada palavra
     """
-    # Limpar a frase e dividir em palavras
-    cleaned_sentence = re.sub(r'[^\w\s\'-]', ' ', sentence)
-    words = cleaned_sentence.split()
-    
-    # Obter dicas para cada palavra
-    hints = []
-    for word in words:
-        if word.strip():
-            hints.append(get_pronunciation_hints(word))
-    
-    return hints
+    words = re.findall(r'\b\w+\b', sentence)
+    return [get_pronunciation_hints(word) for word in words if word.strip()]
 
-# -------------------------------------------------------------
-# Função para obter dicas de liaison entre palavras
-# -------------------------------------------------------------
-def get_liaison_hints(sentence: str) -> List[Dict[str, str]]:
+def get_liaison_hints(sentence: str) -> List[Dict[str, Any]]:
     """
-    Identifica possíveis liaisons entre palavras em uma frase.
+    Detecta possíveis liaisons entre palavras em uma frase.
     
     Args:
         sentence: A frase para analisar
         
     Returns:
-        Lista de dicionários com informações sobre liaisons
+        Uma lista de dicionários com informações sobre liaisons
     """
-    # Limpar a frase e dividir em palavras
-    cleaned_sentence = re.sub(r'[^\w\s\'-]', ' ', sentence)
-    words = cleaned_sentence.split()
+    words = re.findall(r'\b\w+\b', sentence)
+    liaisons = []
     
-    liaison_hints = []
-    
-    # Padrões de liaison
     for i in range(len(words) - 1):
         current_word = words[i].lower()
-        next_word = words[i + 1].lower()
+        next_word = words[i+1].lower()
         
-        # Verificar se a próxima palavra começa com vogal ou h mudo
-        if re.match(r'^[aeiouhéèêëàâîïôûœæy]', next_word):
-            # Artigos e determinantes
-            if current_word in ['les', 'des', 'mes', 'tes', 'ses', 'nos', 'vos', 'leurs'] and current_word.endswith('s'):
-                liaison_hints.append({
-                    "word1": words[i],
-                    "word2": words[i + 1],
-                    "type": "obrigatória",
-                    "sound": "z",
-                    "explanation": f"Liaison obrigatória: o 's' final de '{words[i]}' soa como 'z' antes de '{words[i + 1]}'."
+        # Verificar se a palavra atual termina com consoante muda
+        if re.search(r'[sxztn]$', current_word):
+            # Verificar se a próxima palavra começa com vogal ou h mudo
+            if re.match(r'^[aeiouéèêëàâîïôûœæyh]', next_word) and next_word not in ["huit", "hache", "honte"]:
+                liaison_type = "obrigatória" if current_word in ["les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "aux", "est", "sont"] else "opcional"
+                
+                liaisons.append({
+                    "word1": current_word,
+                    "word2": next_word,
+                    "type": liaison_type,
+                    "explanation": f"Liaison {liaison_type} entre '{current_word}' e '{next_word}'"
                 })
-            
-            # Pronomes
-            elif current_word in ['nous', 'vous', 'ils', 'elles'] and current_word.endswith('s'):
-                liaison_hints.append({
-                    "word1": words[i],
-                    "word2": words[i + 1],
-                    "type": "obrigatória",
-                    "sound": "z",
-                    "explanation": f"Liaison obrigatória: o 's' final de '{words[i]}' soa como 'z' antes de '{words[i + 1]}'."
-                })
-            
-            # Preposições e advérbios
-            elif current_word in ['dans', 'chez', 'sans', 'très', 'plus']:
-                sound = "z" if current_word.endswith('s') else "n" if current_word.endswith('n') else ""
-                if sound:
-                    liaison_hints.append({
-                        "word1": words[i],
-                        "word2": words[i + 1],
-                        "type": "obrigatória",
-                        "sound": sound,
-                        "explanation": f"Liaison obrigatória: o final de '{words[i]}' soa como '{sound}' antes de '{words[i + 1]}'."
-                    })
-            
-            # Números
-            elif current_word in ['un', 'deux', 'trois', 'six', 'dix', 'vingt', 'cent']:
-                sound = "z" if current_word in ['deux', 'trois', 'six', 'dix'] else "t" if current_word in ['vingt', 'cent'] else "n"
-                liaison_hints.append({
-                    "word1": words[i],
-                    "word2": words[i + 1],
-                    "type": "obrigatória",
-                    "sound": sound,
-                    "explanation": f"Liaison obrigatória: o final de '{words[i]}' soa como '{sound}' antes de '{words[i + 1]}'."
-                })
-            
-            # Adjetivos antes de substantivos
-            elif i > 0 and current_word.endswith(('d', 't', 's', 'x', 'z', 'n')):
-                # Verificar se é provavelmente um adjetivo (simplificado)
-                if len(current_word) > 2:  # Evitar falsos positivos com artigos
-                    sound = "t" if current_word.endswith('d') else "z" if current_word.endswith(('s', 'x', 'z')) else "n"
-                    liaison_hints.append({
-                        "word1": words[i],
-                        "word2": words[i + 1],
-                        "type": "comum",
-                        "sound": sound,
-                        "explanation": f"Liaison comum: o final de '{words[i]}' pode soar como '{sound}' antes de '{words[i + 1]}'."
-                    })
     
-    return liaison_hints
+    return liaisons
 
 # -------------------------------------------------------------
-# Função para formatar as dicas de pronúncia em HTML
+# Funções para formatação HTML
 # -------------------------------------------------------------
-def format_pronunciation_hints_html(hints: Dict[str, List[str] or str]) -> str:
+def format_pronunciation_hints_html(hints: Dict[str, Any]) -> str:
     """
-    Formata as dicas de pronúncia em HTML com estilos melhorados.
+    Formata dicas de pronúncia como HTML.
     
     Args:
         hints: Dicionário com dicas de pronúncia
@@ -670,33 +593,75 @@ def format_pronunciation_hints_html(hints: Dict[str, List[str] or str]) -> str:
     Returns:
         String HTML formatada
     """
-    word = hints["word"]
-    highlighted_word = hints["highlighted_word"]
-    explanations = hints["explanations"]
+    if not hints["explanations"]:
+        return ""
     
-    html_output = []
-    html_output.append(CSS_STYLES)
-    html_output.append(f'<div class="pronunciation-container">')
-    html_output.append(f'<h3 class="pronunciation-word">{word}</h3>')
-    html_output.append(f'<div class="pronunciation-highlighted">{highlighted_word}</div>')
-    
-    if explanations:
-        html_output.append('<h4 class="pronunciation-category">Dicas de pronúncia:</h4>')
-        html_output.append('<ul class="pronunciation-list">')
-        for explanation in explanations:
-            html_output.append(f'<li class="pronunciation-hint">{explanation}</li>')
-        html_output.append('</ul>')
-    
-    html_output.append('</div>')
-    
-    return ''.join(html_output)
-
-# -------------------------------------------------------------
-# Função para formatar as dicas de liaison em HTML
-# -------------------------------------------------------------
-def format_liaison_hints_html(liaisons: List[Dict[str, str]]) -> str:
+    html_output = f"""
+    {CSS_STYLES}
+    <div class="pronunciation-hint">
+        <strong>{hints["word"]}</strong>: {", ".join(hints["explanations"])}
+    </div>
     """
-    Formata as dicas de liaison em HTML com estilos melhorados.
+    
+    return html_output
+
+def format_sentence_pronunciation_html(sentence: str) -> str:
+    """
+    Formata dicas de pronúncia para uma frase completa como HTML.
+    
+    Args:
+        sentence: A frase para analisar
+        
+    Returns:
+        String HTML formatada
+    """
+    hints_list = get_sentence_pronunciation_hints(sentence)
+    liaisons = get_liaison_hints(sentence)
+    
+    # Filtrar apenas palavras com explicações
+    hints_list = [h for h in hints_list if h["explanations"]]
+    
+    if not hints_list and not liaisons:
+        return "<p>Nenhuma dica de pronúncia encontrada.</p>"
+    
+    html_output = f"""
+    {CSS_STYLES}
+    <div class="pronunciation-container">
+    """
+    
+    if hints_list:
+        html_output += """
+        <h3 class="pronunciation-category">Dicas de pronúncia:</h3>
+        <ul class="pronunciation-list">
+        """
+        
+        for hint in hints_list:
+            html_output += f"""
+            <li><strong>{hint["word"]}</strong>: {", ".join(hint["explanations"])}</li>
+            """
+        
+        html_output += "</ul>"
+    
+    if liaisons:
+        html_output += """
+        <h3 class="pronunciation-category">Liaisons:</h3>
+        <ul class="pronunciation-list">
+        """
+        
+        for liaison in liaisons:
+            html_output += f"""
+            <li>{liaison["explanation"]}</li>
+            """
+        
+        html_output += "</ul>"
+    
+    html_output += "</div>"
+    
+    return html_output
+
+def format_liaison_hints_html(liaisons: List[Dict[str, Any]]) -> str:
+    """
+    Formata dicas de liaison como HTML.
     
     Args:
         liaisons: Lista de dicionários com informações sobre liaisons
@@ -705,101 +670,23 @@ def format_liaison_hints_html(liaisons: List[Dict[str, str]]) -> str:
         String HTML formatada
     """
     if not liaisons:
-        return ""
+        return "<p>Nenhuma liaison detectada.</p>"
     
-    html_output = []
-    html_output.append(CSS_STYLES)
-    html_output.append('<div class="liaison-container">')
-    html_output.append('<h3 class="pronunciation-category">Dicas de liaison:</h3>')
-    html_output.append('<ul class="pronunciation-list">')
+    html_output = f"""
+    {CSS_STYLES}
+    <div class="pronunciation-container">
+        <h3 class="pronunciation-category">Liaisons:</h3>
+        <ul class="pronunciation-list">
+    """
     
     for liaison in liaisons:
-        word1 = liaison["word1"]
-        word2 = liaison["word2"]
-        sound = liaison["sound"]
-        type_liaison = liaison["type"]
-        explanation = liaison["explanation"]
-        
-        color = "#FF0000" if type_liaison == "obrigatória" else "#0000FF"
-        
-        html_output.append(f'<li class="pronunciation-hint">')
-        html_output.append(f'<strong style="color:{color}">{word1}</strong> + ')
-        html_output.append(f'<strong>{word2}</strong>: ')
-        html_output.append(f'{explanation}')
-        html_output.append('</li>')
+        html_output += f"""
+        <li>{liaison["explanation"]}</li>
+        """
     
-    html_output.append('</ul>')
-    html_output.append('</div>')
-    
-    return ''.join(html_output)
-
-# -------------------------------------------------------------
-# Função para formatar as dicas de pronúncia para uma frase inteira em HTML
-# -------------------------------------------------------------
-def format_sentence_pronunciation_html(sentence: str) -> str:
+    html_output += """
+        </ul>
+    </div>
     """
-    Formata as dicas de pronúncia para uma frase inteira em HTML.
     
-    Args:
-        sentence: A frase para analisar
-        
-    Returns:
-        String HTML formatada
-    """
-    word_hints = get_sentence_pronunciation_hints(sentence)
-    liaison_hints = get_liaison_hints(sentence)
-    
-    html_output = []
-    html_output.append(CSS_STYLES)
-    html_output.append('<div class="sentence-pronunciation-container">')
-    html_output.append(f'<h2 class="sentence-original">Frase: {html.escape(sentence)}</h2>')
-    
-    # Seção de palavras
-    html_output.append('<div class="words-section">')
-    html_output.append('<h3 class="pronunciation-category">Pronúncia por palavra:</h3>')
-    
-    for word_hint in word_hints:
-        word = word_hint["word"]
-        highlighted_word = word_hint["highlighted_word"]
-        explanations = word_hint["explanations"]
-        
-        if explanations:
-            html_output.append('<div class="word-container" style="margin-bottom: 20px; padding: 10px; border: 1px solid #eee; border-radius: 5px;">')
-            html_output.append(f'<h4 class="word-title" style="margin-bottom: 10px;">{word}</h4>')
-            html_output.append(f'<div class="word-highlighted" style="font-size: 1.2em; margin-bottom: 10px;">{highlighted_word}</div>')
-            
-            html_output.append('<ul class="pronunciation-list">')
-            for explanation in explanations:
-                html_output.append(f'<li class="pronunciation-hint">{explanation}</li>')
-            html_output.append('</ul>')
-            html_output.append('</div>')
-    
-    html_output.append('</div>')  # Fim da seção de palavras
-    
-    # Seção de liaison
-    if liaison_hints:
-        html_output.append('<div class="liaison-section">')
-        html_output.append('<h3 class="pronunciation-category">Liaisons na frase:</h3>')
-        html_output.append('<ul class="pronunciation-list">')
-        
-        for liaison in liaison_hints:
-            word1 = liaison["word1"]
-            word2 = liaison["word2"]
-            sound = liaison["sound"]
-            type_liaison = liaison["type"]
-            explanation = liaison["explanation"]
-            
-            color = "#FF0000" if type_liaison == "obrigatória" else "#0000FF"
-            
-            html_output.append(f'<li class="pronunciation-hint" style="margin-bottom: 15px;">')
-            html_output.append(f'<strong style="color:{color}; font-size: 1.1em;">{word1}</strong> + ')
-            html_output.append(f'<strong style="font-size: 1.1em;">{word2}</strong>: ')
-            html_output.append(f'{explanation}')
-            html_output.append('</li>')
-        
-        html_output.append('</ul>')
-        html_output.append('</div>')  # Fim da seção de liaison
-    
-    html_output.append('</div>')  # Fim do container principal
-    
-    return ''.join(html_output)
+    return html_output
