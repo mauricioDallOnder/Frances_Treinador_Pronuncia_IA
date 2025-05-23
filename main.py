@@ -1,31 +1,18 @@
 import os
-import re
-import json
 import pickle
 import random
-import tempfile
 import logging
-import unicodedata
 import traceback
 from flask import Flask, request, render_template, jsonify, send_file
 from concurrent.futures import ThreadPoolExecutor
 from SpecialRoules import *
 
-import WordMatching
-import WordMetrics
-from SpecialRoules import (
-    handle_est_ce_que,
-    handle_est_pronunciation,
-    handle_plus_pronunciation
-)
 from getPronunciation import get_pronunciation_hints
 from functions import (
-    epi,
-    ipa_dictionary,
     transliterate_and_convert_sentence,
-    normalize_text,
+   
     remove_punctuation_end,
-    get_pronunciation  # caso precise direto
+    
 )
 
 # -----------------------------------------------------------------------------
