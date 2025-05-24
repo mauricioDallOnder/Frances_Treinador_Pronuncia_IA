@@ -267,400 +267,329 @@
     </main>
 
     <script>
-      // Função para escapar caracteres HTML
-      function escapeHtml(unsafe) {
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+     // Função para escapar caracteres HTML
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/	/g, "&#039;");
+}
+
+let frenchVoices = [];
+let selectedVoice = null;
+let synth = window.speechSynthesis;
+let utterance = null;
+
+// Inicializa as vozes e tenta selecionar a melhor voz francesa
+function initVoices() {
+  // Tenta obter as vozes imediatamente
+  frenchVoices = synth.getVoices().filter((voice) => voice.lang.startsWith("fr"));
+  console.log("Vozes iniciais:", frenchVoices.length);
+
+  // Se não houver vozes, espera pelo evento 'voiceschanged'
+  if (frenchVoices.length === 0 && "onvoiceschanged" in synth) {
+    synth.onvoiceschanged = function () {
+      console.log("Evento voiceschanged disparado");
+      frenchVoices = synth.getVoices().filter((voice) => voice.lang.startsWith("fr"));
+      console.log("Vozes carregadas após evento:", frenchVoices.length);
+      selectedVoice = getBestFrenchVoice();
+      if (selectedVoice) {
+        console.log("Melhor voz francesa selecionada após evento:", selectedVoice.name, selectedVoice.lang);
+      } else {
+        console.warn("Nenhuma voz francesa de alta qualidade encontrada após evento.");
       }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        const categorySelect = document.getElementById("category");
-        const options = categorySelect.options;
-        const randomIndex = Math.floor(Math.random() * options.length);
-
-        // Define uma opção aleatória
-        categorySelect.selectedIndex = randomIndex;
-        
-        // Inicializa as vozes
-        initVoices();
-      });
-
-      // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
-      function disableButtons() {
-        document.getElementById("speakButton").disabled = true;
-        document.getElementById("generateButton").disabled = true;
-      }
-
-      function enableButtons() {
-        document.getElementById("speakButton").disabled = false;
-        document.getElementById("generateButton").disabled = false;
-      }
-
-      function showMessage(message) {
-        let statusMessage = document.getElementById("statusMessage");
-        statusMessage.innerText = message;
-        statusMessage.style.display = "block";
-      }
-
-      function hideMessage() {
-        let statusMessage = document.getElementById("statusMessage");
-        statusMessage.style.display = "none";
-      }
-
-      document.getElementById("text").addEventListener("input", function () {
-        fetchPronunciation(this.value);
-      });
-
-      function fetchPronunciation(text) {
-        fetch("/pronounce", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(text),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              // Se o servidor retornar, por exemplo, 500 ou outro erro
-              throw new Error(
-                "Erro no servidor /pronounce: " + response.status
-              );
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // Verifica se a resposta contém um campo "error"
-            if (data.error) {
-              console.error(
-                "Erro retornado pelo servidor /pronounce:",
-                data.error
-              );
-              // Aqui você pode exibir uma mensagem de erro na tela, se quiser
-              return; // Encerra a função, não prossegue
-            }
-
-            // Verifica se data.pronunciations existe
-            if (!data.pronunciations) {
-              console.warn("pronunciations não veio na resposta. data =", data);
-              return; // Encerra a função
-            }
-
-            // Agora sim podemos usar .split
-            const pronunciations = data.pronunciations;
-            document.getElementById("pronunciation").innerText = pronunciations;
-          })
-          .catch((error) => {
-            console.error("Erro ao buscar pronúncia:", error);
-          });
-
-        // Busca dicas de pronúncia
-        fetch("/hints", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "text=" + encodeURIComponent(text),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              console.error("Erro retornado pelo servidor /hints:", data.error);
-              return;
-            }
-
-            const hintsList = document.getElementById("hintsList");
-            hintsList.innerHTML = ""; // Limpa a lista
-
-            if (data.hints && data.hints.length > 0) {
-              data.hints.forEach((hint) => {
-                const li = document.createElement("li");
-                // Importante: Usar innerHTML em vez de innerText para renderizar as tags HTML
-                li.innerHTML = `<strong>${escapeHtml(hint.word)}</strong>: ${hint.explanations.join(", ")}`;
-                hintsList.appendChild(li);
-              });
-            } else {
-              hintsList.innerHTML = "<li>Nenhuma dica disponível.</li>";
-            }
-          })
-          .catch((error) => {
-            console.error("Erro ao buscar dicas:", error);
-          });
-      }
-
-      function generateSentence() {
-        disableButtons();
-        showMessage("Gerando frase...");
-
-        const category = document.getElementById("category").value;
-
-        fetch("/get_sentence", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: "category=" + encodeURIComponent(category),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              console.error(
-                "Erro retornado pelo servidor /get_sentence:",
-                data.error
-              );
-              showMessage("Erro ao gerar frase. Tente novamente.");
-              return;
-            }
-
-            document.getElementById("text").value = data.fr_sentence;
-            fetchPronunciation(data.fr_sentence);
-            hideMessage();
-          })
-          .catch((error) => {
-            console.error("Erro ao gerar frase:", error);
-            showMessage("Erro ao gerar frase. Tente novamente.");
-          })
-          .finally(() => {
-            enableButtons();
-          });
-      }
-
-      // Variáveis globais para armazenar as vozes
-      let allVoices = [];
-      let frenchVoices = [];
-      let voicesLoaded = false;
-      let voiceLoadAttempts = 0;
-      const MAX_VOICE_LOAD_ATTEMPTS = 5;
-
-      // Inicializa as vozes
-      function initVoices() {
-        // Função para processar as vozes quando estiverem disponíveis
-        function processVoices() {
-          allVoices = window.speechSynthesis.getVoices();
-          
-          // Filtrar vozes francesas
-          frenchVoices = allVoices.filter(voice => 
-            voice.lang.startsWith('fr') || 
-            voice.name.toLowerCase().includes('french') || 
-            voice.name.toLowerCase().includes('français')
-          );
-          
-          console.log("Vozes disponíveis:", allVoices.length);
-          console.log("Vozes francesas encontradas:", frenchVoices.length);
-          
-          if (frenchVoices.length > 0) {
-            frenchVoices.forEach(voice => {
-              console.log(`Voz francesa: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
-            });
-            voicesLoaded = true;
+    };
+  } else {
+    selectedVoice = getBestFrenchVoice();
+    if (selectedVoice) {
+      console.log("Melhor voz francesa selecionada inicialmente:", selectedVoice.name, selectedVoice.lang);
+    } else {
+      console.warn("Nenhuma voz francesa de alta qualidade encontrada inicialmente.");
+    }
+  }
+  
+  // Fallback para garantir que as vozes sejam carregadas em alguns navegadores
+  setTimeout(() => {
+      if (frenchVoices.length === 0) {
+          console.log("Tentando obter vozes após timeout...");
+          frenchVoices = synth.getVoices().filter((voice) => voice.lang.startsWith("fr"));
+          console.log("Vozes carregadas após timeout:", frenchVoices.length);
+          selectedVoice = getBestFrenchVoice();
+          if (selectedVoice) {
+              console.log("Melhor voz francesa selecionada após timeout:", selectedVoice.name, selectedVoice.lang);
           } else {
-            console.warn("Nenhuma voz francesa encontrada!");
-            
-            // Tentar novamente se não encontrou vozes francesas
-            if (voiceLoadAttempts < MAX_VOICE_LOAD_ATTEMPTS) {
-              voiceLoadAttempts++;
-              console.log(`Tentativa ${voiceLoadAttempts} de carregar vozes francesas...`);
-              setTimeout(processVoices, 500);
-            }
+              console.warn("Nenhuma voz francesa de alta qualidade encontrada após timeout.");
           }
-        }
+      }
+  }, 500); // Atraso de 500ms
+}
 
-        // Para Chrome e Edge
-        if (window.speechSynthesis) {
-          if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = processVoices;
-          }
-          
-          // Tenta carregar as vozes imediatamente (para Safari)
-          setTimeout(() => {
-            if (!voicesLoaded) {
-              processVoices();
-            }
-          }, 100);
-          
-          // Força a inicialização das vozes
-          window.speechSynthesis.cancel();
-        }
+// Função para selecionar a melhor voz francesa disponível
+function getBestFrenchVoice() {
+  if (frenchVoices.length === 0) {
+      console.warn("Nenhuma voz francesa disponível ainda.");
+      // Tenta obter novamente, pode ser que o evento não tenha disparado
+      frenchVoices = synth.getVoices().filter((voice) => voice.lang.startsWith("fr"));
+      if (frenchVoices.length === 0) return null;
+  }
+
+  // Prioridade para vozes premium/naturais
+  const premiumKeywords = ["enhanced", "premium", "neural", "google", "microsoft", "apple", "natural"];
+  let bestVoice = null;
+
+  // 1. Tenta encontrar vozes premium/naturais específicas para fr-FR
+  bestVoice = frenchVoices.find(voice => 
+      voice.lang === "fr-FR" && 
+      premiumKeywords.some(keyword => voice.name.toLowerCase().includes(keyword))
+  );
+  if (bestVoice) return bestVoice;
+
+  // 2. Tenta encontrar vozes premium/naturais para qualquer variante de francês (fr-CA, etc.)
+  bestVoice = frenchVoices.find(voice => 
+      premiumKeywords.some(keyword => voice.name.toLowerCase().includes(keyword))
+  );
+  if (bestVoice) return bestVoice;
+
+  // 3. Tenta encontrar vozes padrão específicas para fr-FR
+  bestVoice = frenchVoices.find(voice => voice.lang === "fr-FR" && voice.default);
+  if (bestVoice) return bestVoice;
+  bestVoice = frenchVoices.find(voice => voice.lang === "fr-FR");
+  if (bestVoice) return bestVoice;
+
+  // 4. Se não encontrou fr-FR, pega a primeira voz francesa padrão disponível
+  bestVoice = frenchVoices.find(voice => voice.default);
+  if (bestVoice) return bestVoice;
+
+  // 5. Se não encontrou nenhuma padrão, pega a primeira voz francesa da lista
+  return frenchVoices.length > 0 ? frenchVoices[0] : null;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const categorySelect = document.getElementById("category");
+  const options = categorySelect.options;
+  const randomIndex = Math.floor(Math.random() * options.length);
+
+  // Define uma opção aleatória
+  categorySelect.selectedIndex = randomIndex;
+
+  // Inicializa as vozes
+  initVoices();
+});
+
+// Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
+function disableButtons() {
+  document.getElementById("speakButton").disabled = true;
+  document.getElementById("generateButton").disabled = true;
+}
+
+function enableButtons() {
+  document.getElementById("speakButton").disabled = false;
+  document.getElementById("generateButton").disabled = false;
+}
+
+function showMessage(message) {
+  let statusMessage = document.getElementById("statusMessage");
+  statusMessage.innerText = message;
+  statusMessage.style.display = "block";
+}
+
+function hideMessage() {
+  let statusMessage = document.getElementById("statusMessage");
+  statusMessage.style.display = "none";
+}
+
+document.getElementById("text").addEventListener("input", function () {
+  fetchPronunciation(this.value);
+});
+
+function fetchPronunciation(text) {
+  if (!text || text.trim() === "") {
+      document.getElementById("pronunciation").innerText = "";
+      document.getElementById("hintsList").innerHTML = "";
+      return;
+  }
+  
+  fetch("/pronounce", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "text=" + encodeURIComponent(text),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Erro no servidor /pronounce: " + response.status);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.error) {
+        console.error("Erro retornado pelo servidor /pronounce:", data.error);
+        document.getElementById("pronunciation").innerText = "Erro ao obter pronúncia.";
+        return;
+      }
+      if (!data.pronunciations) {
+        console.warn("pronunciations não veio na resposta. data =", data);
+        document.getElementById("pronunciation").innerText = "Pronúncia não disponível.";
+        return;
+      }
+      document.getElementById("pronunciation").innerText = data.pronunciations;
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar pronúncia:", error);
+      document.getElementById("pronunciation").innerText = "Erro ao buscar pronúncia.";
+    });
+
+  // Busca dicas de pronúncia
+  fetch("/hints", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "text=" + encodeURIComponent(text),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.error) {
+        console.error("Erro retornado pelo servidor /hints:", data.error);
+        document.getElementById("hintsList").innerHTML = "<li>Erro ao obter dicas.</li>";
+        return;
       }
 
-      // Função para encontrar a melhor voz francesa disponível
-      function getBestFrenchVoice() {
-        if (frenchVoices.length === 0) {
-          // Se ainda não carregou as vozes, tenta carregar novamente
-          allVoices = window.speechSynthesis.getVoices();
-          frenchVoices = allVoices.filter(voice => 
-            voice.lang.startsWith('fr') || 
-            voice.name.toLowerCase().includes('french') || 
-            voice.name.toLowerCase().includes('français')
-          );
-        }
-        
-        if (frenchVoices.length === 0) {
-          console.warn("Nenhuma voz francesa encontrada após nova tentativa.");
-          
-          // Último recurso: procurar por qualquer voz que possa ser usada
-          const browserLanguage = navigator.language || navigator.userLanguage;
-          console.log("Idioma do navegador:", browserLanguage);
-          
-          // Tentar encontrar uma voz no idioma do navegador
-          if (browserLanguage.startsWith('fr')) {
-            const browserVoices = allVoices.filter(voice => voice.lang.startsWith(browserLanguage));
-            if (browserVoices.length > 0) {
-              console.log(`Usando voz do idioma do navegador: ${browserVoices[0].name}`);
-              return browserVoices[0];
-            }
-          }
-          
-          // Se não encontrar nenhuma voz francesa, usar a primeira voz disponível
-          if (allVoices.length > 0) {
-            console.log(`Usando primeira voz disponível: ${allVoices[0].name}`);
-            return allVoices[0];
-          }
-          
-          return null;
-        }
-        
-        // Prioridade 1: Vozes francesas nativas (localService: true)
-        const nativeFrenchVoices = frenchVoices.filter(voice => voice.localService);
-        if (nativeFrenchVoices.length > 0) {
-          return nativeFrenchVoices[0];
-        }
-        
-        // Prioridade 2: Vozes com código de idioma fr-FR
-        const frFRVoices = frenchVoices.filter(voice => voice.lang === 'fr-FR');
-        if (frFRVoices.length > 0) {
-          return frFRVoices[0];
-        }
-        
-        // Prioridade 3: Qualquer voz francesa
-        return frenchVoices[0];
-      }
+      const hintsList = document.getElementById("hintsList");
+      hintsList.innerHTML = ""; // Limpa a lista
 
-      // Implementação da síntese de voz usando Web Speech API
-      function speakText() {
-        const text = document.getElementById("text").value.trim();
-        
-        if (!text) {
-          showMessage("Por favor, insira ou gere um texto para ouvir.");
-          return;
-        }
-        
-        // Verifica se o navegador suporta a API de síntese de voz
-        if ('speechSynthesis' in window) {
-          disableButtons();
-          showMessage("Reproduzindo áudio...");
-          
-          // Cancela qualquer fala anterior
-          window.speechSynthesis.cancel();
-          
-          // Cria um novo objeto de fala
-          const utterance = new SpeechSynthesisUtterance(text);
-          
-          // Define o idioma como francês
-          utterance.lang = 'fr-FR';
-          
-          // Tenta obter a melhor voz francesa
-          //const bestVoice = getBestFrenchVoice();
-          const bestVoice = getBestFrenchVoice();
-          
-          if (bestVoice) {
-            utterance.voice = bestVoice;
-            console.log(`Usando voz francesa: ${bestVoice.name} (${bestVoice.lang})`);
-          } else {
-            console.warn("Nenhuma voz francesa encontrada. Usando configuração padrão com idioma fr-FR.");
-          }
-          
-          // Ajusta a taxa e o tom para melhorar a qualidade
-          utterance.rate = 0.9;  // Um pouco mais lento que o normal
-          utterance.pitch = 1.0; // Tom normal
-          
-          // Configura eventos para saber quando a fala terminou
-          utterance.onend = function() {
-            console.log("Síntese de voz concluída com sucesso");
-            enableButtons();
-            hideMessage();
-          };
-          
-          utterance.onerror = function(event) {
-            console.error("Erro na síntese de voz:", event);
-            showMessage("Erro ao reproduzir áudio. Tente novamente.");
-            enableButtons();
-          };
-          
-          // Inicia a síntese de voz
-          window.speechSynthesis.speak(utterance);
-          
-          // Workaround para o bug do Chrome/Edge que para após 15 segundos
-          if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Edge') !== -1) {
-            const resumeInfinity = setInterval(() => {
-              if (!window.speechSynthesis.speaking) {
-                clearInterval(resumeInfinity);
-                return;
-              }
-              window.speechSynthesis.pause();
-              window.speechSynthesis.resume();
-            }, 10000);
-          }
-          
-          // Workaround para Safari que às vezes não inicia a fala
-          if (navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Chrome') === -1) {
-            setTimeout(() => {
-              if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-              }
-            }, 250);
-            
-            // Workaround adicional para Safari - forçar a seleção de voz
-            if (!utterance.voice) {
-              const safariVoices = window.speechSynthesis.getVoices();
-              const frenchSafariVoice = safariVoices.find(v => v.lang.startsWith('fr'));
-              if (frenchSafariVoice) {
-                utterance.voice = frenchSafariVoice;
-                console.log("Safari: Forçando voz francesa:", frenchSafariVoice.name);
-              }
-            }
-          }
-        } else {
-          showMessage("Seu navegador não suporta síntese de voz. Tente usar Chrome, Edge ou Safari.");
-        }
-      }
-
-      // Adiciona um evento para cancelar a fala se o usuário clicar em outro lugar
-      document.addEventListener('click', function(event) {
-        // Se o clique não foi no botão de falar e há uma síntese em andamento
-        if (event.target.id !== 'speakButton' && window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
-          enableButtons();
-          hideMessage();
-        }
-      });
-      
-      // Função para testar as vozes disponíveis
-      function testVoices() {
-        console.log("Testando vozes disponíveis...");
-        const voices = window.speechSynthesis.getVoices();
-        console.log(`Total de vozes: ${voices.length}`);
-        
-        voices.forEach((voice, index) => {
-          console.log(`Voz ${index}: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
+      if (data.hints && data.hints.length > 0) {
+        data.hints.forEach((hint) => {
+          const li = document.createElement("li");
+          // Usa innerHTML para renderizar as tags HTML com cores e destaques
+          li.innerHTML = `<strong>${escapeHtml(hint.word)}</strong>: ${hint.explanation}`;
+          hintsList.appendChild(li);
         });
-        
-        // Testar se há vozes francesas
-        const frenchVoices = voices.filter(voice => voice.lang.startsWith('fr'));
-        console.log(`Vozes francesas: ${frenchVoices.length}`);
-        
-        frenchVoices.forEach((voice, index) => {
-          console.log(`Voz francesa ${index}: ${voice.name} (${voice.lang}), Local: ${voice.localService}`);
-        });
-        
-        return frenchVoices.length > 0;
+      } else {
+        hintsList.innerHTML = "<li>Nenhuma dica disponível.</li>";
       }
-      
-      // Executar teste de vozes após um tempo
-      setTimeout(testVoices, 2000);
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar dicas:", error);
+      document.getElementById("hintsList").innerHTML = "<li>Erro ao buscar dicas.</li>";
+    });
+}
+
+function generateSentence() {
+  disableButtons();
+  showMessage("Gerando frase...");
+
+  const category = document.getElementById("category").value;
+
+  fetch("/get_sentence", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "category=" + encodeURIComponent(category),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.error) {
+        console.error("Erro retornado pelo servidor /get_sentence:", data.error);
+        showMessage("Erro ao gerar frase.");
+        enableButtons();
+        return;
+      }
+      const sentence = data.sentence;
+      document.getElementById("text").value = sentence;
+      fetchPronunciation(sentence); // Busca pronúncia e dicas para a nova frase
+      hideMessage();
+      enableButtons();
+    })
+    .catch((error) => {
+      console.error("Erro ao gerar frase:", error);
+      showMessage("Erro ao gerar frase.");
+      enableButtons();
+    });
+}
+
+// Função para falar o texto usando Web Speech API
+function speakText() {
+  const text = document.getElementById("text").value;
+  if (!text || text.trim() === "") {
+    showMessage("Por favor, gere ou digite um texto para escutar.");
+    return;
+  }
+
+  if (!synth) {
+    showMessage("Seu navegador não suporta síntese de voz.");
+    return;
+  }
+
+  // Cancela qualquer fala anterior
+  if (synth.speaking) {
+    synth.cancel();
+  }
+  
+  // Tenta obter a melhor voz novamente caso a inicialização tenha falhado
+  if (!selectedVoice) {
+      console.log("Tentando selecionar a melhor voz antes de falar...");
+      selectedVoice = getBestFrenchVoice();
+  }
+
+  if (!selectedVoice) {
+    showMessage(
+      "Nenhuma voz em francês encontrada. Verifique as vozes instaladas no seu sistema."
+    );
+    console.warn("Vozes disponíveis:", synth.getVoices());
+    return;
+  }
+
+  utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = selectedVoice;
+  utterance.lang = selectedVoice.lang; // Garante que o idioma correto seja usado
+  utterance.rate = 0.95; // Velocidade ligeiramente mais lenta para clareza
+  utterance.pitch = 1.0; // Tom padrão
+  utterance.volume = 1.0; // Volume máximo
+
+  utterance.onstart = function () {
+    console.log("Iniciando fala com a voz:", selectedVoice.name);
+    showMessage("Falando...");
+    disableButtons();
+  };
+
+  utterance.onend = function () {
+    console.log("Fala concluída.");
+    hideMessage();
+    enableButtons();
+    utterance = null; // Limpa a referência
+  };
+
+  utterance.onerror = function (event) {
+    console.error("Erro na síntese de voz:", event.error);
+    showMessage("Erro ao tentar falar: " + event.error);
+    hideMessage();
+    enableButtons();
+    utterance = null;
+  };
+
+  // Workaround para bug do Chrome/Edge que para após 15 segundos
+  const intervalId = setInterval(() => {
+      if (synth.speaking) {
+          console.log("Mantendo a fala ativa...");
+          synth.resume(); 
+      } else {
+          clearInterval(intervalId);
+      }
+  }, 14000);
+  
+  utterance.addEventListener('end', () => clearInterval(intervalId));
+  utterance.addEventListener('error', () => clearInterval(intervalId));
+
+  // Inicia a fala
+  synth.speak(utterance);
+}
+
+
     </script>
   </body>
 </html>
