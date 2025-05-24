@@ -1,17 +1,25 @@
+/* ==========================================================================
+   Base & Global Styles
+   ========================================================================== */
 html {
   height: 100%;
   width: 100%;
 }
 
 body {
-  background-color: #4158D0;
-  max-width: 100%;
   margin: 0;
   padding: 20px;
+  background-color: #4158D0;
   background-image: url('https://firebasestorage.googleapis.com/v0/b/mauriciodallonder-64688.appspot.com/o/bandeira.jpg?alt=media&token=93383751-b852-4b4a-89e9-82037c09f9da');
   background-size: cover;
   background-attachment: fixed;
+  max-width: 100%;
+  font-family: sans-serif;
 }
+
+/* ==========================================================================
+   Container & Layout
+   ========================================================================== */
 .container {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 20px;
@@ -19,49 +27,32 @@ body {
   margin-top: 20px;
   width: 100%;
 }
-.main-content, .feedback-box {
+
+.flex-md-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.main-content,
+.feedback-box {
   margin-bottom: 20px;
 }
-.word {
-  cursor: pointer;
-  margin-right: 5px;
-  padding: 5px;
-  color:#4158D0;
-  border-radius: 5px;
+
+.feedback-box {
+  flex: 0 0 30%;
+  margin-left: 20px;
+  border: 2px solid #3b5998;
+  border-radius: 10px;
+  padding: 20px;
 }
-.separator {
-  color: red;
-  margin-right: 5px;
+
+.main-content {
+  flex: 0 0 65%;
 }
-.incorrect {
-  color: red;
-}
-.correct {
-  color: green;
-}
-.btn-speak {
-  display: block;
-  margin-top: 10px;
-  width: 100%;
-}
-.recording {
-  color: red;
-}
-.uploading-message {
-  display: none;
-  color: red;
-}
-.textarea {
-  width: fit-content;
-  height: fit-content;
-  resize: none; /* Impede o redimensionamento manual */
-  overflow: hidden; /* Remove todas as barras de rolagem */
-  font-size: 16px;
-  padding: 10px;
-  box-sizing: border-box;
-  min-height: 60px;
-  line-height: 1.5;
-}
+
+/* ==========================================================================
+   Form Controls & Text Inputs
+   ========================================================================== */
 select {
   width: 100%;
   max-width: 600px;
@@ -79,139 +70,205 @@ optgroup {
 option {
   padding: 4px;
 }
-.explica{
+
+.textarea {
+  width: fit-content;
+  height: fit-content;
+  resize: none;
+  overflow: hidden;
+  font-size: 16px;
+  padding: 10px;
+  box-sizing: border-box;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+.form-label {
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+/* ==========================================================================
+   Buttons & Status Messages
+   ========================================================================== */
+.classButton {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-speak {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.recording {
+  color: red;
+}
+
+.uploading-message {
+  display: none;
+  color: red;
+}
+
+#statusMessage {
+  display: none;
+  font-weight: bold;
+  color: red;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Highlights & Pronunciation Helpers
+   ========================================================================== */
+.pronunciation-hint {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.highlight {
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin: 0 2px;
+  display: inline-block;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.vowel-highlight       { background-color: rgba(255,0,0,0.1); }
+.consonant-highlight   { background-color: rgba(0,0,255,0.1); }
+.nasal-highlight       { background-color: rgba(153,0,204,0.1); }
+.diphthong-highlight   { background-color: rgba(0,204,0,0.1); }
+.silent-highlight      { background-color: rgba(153,153,153,0.1); }
+.special-highlight     { background-color: rgba(255,153,0,0.1); }
+
+.explica {
   font-size: 14px !important;
   font-weight: bold !important;
 }
 
-/* Responsividade para telas menores */
+/* ==========================================================================
+   Pronunciation Section
+   ========================================================================== */
+.pronunciation-feedback {
+  border: 2px solid #0d6efd;
+  background-color: #e3f2fd;
+  padding: 20px;
+  margin-bottom: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.pronunciation-feedback > h3.form-label {
+  font-size: 1.4rem;
+  color: #0d6efd;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #0d6efd;
+  padding-bottom: 6px;
+}
+
+#pronunciation {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+/* ==========================================================================
+   Divider
+   ========================================================================== */
+.section-divider {
+  border: 0;
+  height: 1px;
+  background: #ddd;
+  margin: 40px 0 20px;
+}
+
+/* ==========================================================================
+   Hints Section
+   ========================================================================== */
+#hintsContainer {
+  border: 2px solid #198754;
+  background-color: #e6f4ea;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+#hintsContainer > h4 {
+  font-size: 1.3rem;
+  color: #198754;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #198754;
+  padding-bottom: 6px;
+}
+
+.pronunciation-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.pronunciation-list li {
+  background: #fff;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+#hintsList li strong {
+  font-size: 1.1em;
+  color: #0d6efd;
+}
+
+/* ==========================================================================
+   Responsive: Small Screens
+   ========================================================================== */
 @media (max-width: 767px) {
-  /* Ajusta a largura do textarea para ocupar o espaço total */
+  .flex-md-row {
+    display: block;
+    width: 100%;
+  }
+
+  .main-content,
+  .feedback-box {
+    width: 100%;
+    margin: 0;
+    padding: 10px 0;
+  }
+
+  .classButton {
+    flex-direction: column;
+  }
+
   .form-control {
     width: 100%;
     font-size: 16px;
     height: 100px;
   }
 
-  /* Ajusta o espaçamento e alinhamento para evitar sobreposição */
-  .flex-md-row {
-    display: block;
-    width: 100%;
-  }
-
-  .main-content, .feedback-box {
-    width: 100%;
-    margin: 0;
-    padding: 10px 0;
-  }
-
-  #translation,
   #pronunciation {
     font-size: 18px;
     line-height: 1.4;
     margin-top: 8px;
-    color:#4158D0
     margin-bottom: 10px;
     padding: 8px;
     border-radius: 4px;
     background-color: #f8f9fa;
+    color: #4158D0;
   }
-
-  /* Ajuste do tamanho da fonte e do espaçamento */
-  .form-label {
-    font-size: 16px;
-    margin-bottom: 5px;
-  }
-
-  #feedbackBox {
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-  .classButton{
-    display: flex;
-    flex-direction: column;
-  }
-  .word{
-    font-size:medium;
-    line-height: 1.6rem;
-  }
- 
 }
 
-/* Ajuste para telas maiores */
+/* ==========================================================================
+   Responsive: Medium & Up
+   ========================================================================== */
 @media (min-width: 768px) {
-  .flex-md-row {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .main-content {
-    flex: 0 0 65%;
-  }
-
-  .feedback-box {
-    flex: 0 0 30%;
-    margin-left: 20px;
-    border: 2px solid #3b5998;
-    border-radius: 10px;
-    padding: 20px;
-   
-  }
-  
+  /* já definido em container/layout */
 }
-
-.classButton{
-  display: flex;
-  justify-content: center;
-  gap:12px
-  
-}
-
-  .pronunciation-hint {
-          margin-bottom: 12px;
-          line-height: 1.6;
-          font-size: 16px;
-      }
-      .highlight {
-          font-weight: bold;
-          padding: 2px 4px;
-          border-radius: 3px;
-          margin: 0 2px;
-          display: inline-block;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      }
-      .vowel-highlight { background-color: rgba(255,0,0,0.1); }
-      .consonant-highlight { background-color: rgba(0,0,255,0.1); }
-      .nasal-highlight { background-color: rgba(153,0,204,0.1); }
-      .diphthong-highlight { background-color: rgba(0,204,0,0.1); }
-      .silent-highlight { background-color: rgba(153,153,153,0.1); }
-      .special-highlight { background-color: rgba(255,153,0,0.1); }
-      .pronunciation-list {
-          list-style-type: none;
-          padding-left: 0;
-      }
-      .pronunciation-list li {
-          padding: 8px 0;
-          border-bottom: 1px solid #eee;
-          margin-bottom: 8px;
-      }
-      .pronunciation-list li:last-child {
-          border-bottom: none;
-      }
-      .pronunciation-category {
-          font-weight: bold;
-          margin-top: 16px;
-          margin-bottom: 8px;
-          font-size: 18px;
-      }
-      #hintsList li {
-          margin-bottom: 10px;
-          padding: 8px;
-          border-radius: 4px;
-          background-color: #f8f9fa;
-      }
-      #hintsList li strong {
-          font-size: 1.1em;
-          color: #0d6efd;
-      }
