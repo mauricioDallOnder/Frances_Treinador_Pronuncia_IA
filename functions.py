@@ -17,7 +17,6 @@ except Exception as e:
     logger.warning(f"Erro ao inicializar Epitran: {e}")
     epi = None
 
-
 # Carregar dicionário de pronúncias
 script_dir = os.path.dirname(os.path.abspath(__file__))
 dic_path = os.path.join(script_dir, 'dic.json')
@@ -33,24 +32,21 @@ except Exception as e:
 IGNORED_CHARS = set([',', '.', ';', ':', '!', '?', ' ', '\t', '\n', '-', '_', '(', ')', '[', ']', '{', '}', '"', "'"])
 
 # Mapeamento de fonemas IPA para representação simplificada
-IPA_TO_SIMPLE_PT = {
-   'a': 'a', 'ɑ': 'a', 'ɑ̃': 'ã',
-    'e': 'e', 'ɛ': 'é', 'ə': 'e', 
-    'œ': 'é', 'ø': 'ê', # More Portuguese-like vowels ('eu' might be alternative for ø/œ)
+IPA_TO_SIMPLE = {
+    'a': 'a', 'ɑ': 'a', 'ɑ̃': 'ã',
+    'e': 'e', 'ɛ': 'é', 'ə': 'e', 'œ': 'ö', 'ø': 'ö',
     'i': 'i', 'ɪ': 'i',
     'o': 'o', 'ɔ': 'ó', 'ɔ̃': 'õ',
     'u': 'u', 'ʊ': 'u',
-    'y': 'i', # Map French 'u' sound to Portuguese 'i'
-    'ɛ̃': 'ẽ', 'œ̃': 'ẽ', # Keep nasal e (œ̃ could be 'ũ')
-    'j': 'i', # Map French 'yod' to Portuguese 'i' semi-vowel
-    'w': 'u', # Map French 'w' to Portuguese 'u' semi-vowel
-    'ɥ': 'i', # Map French 'hu' sound to Portuguese 'i'
+    'y': 'ü',
+    'ɛ̃': 'ẽ', 'œ̃': 'ẽ', 'ɑ̃': 'ã', 'ɔ̃': 'õ',
+    'j': 'j', 'w': 'w', 'ɥ': 'ɥ',
     'b': 'b', 'd': 'd', 'f': 'f', 'g': 'g', 'k': 'k',
     'l': 'l', 'm': 'm', 'n': 'n', 'ɲ': 'nh', 'ŋ': 'ng',
     'p': 'p', 'ʁ': 'r', 'r': 'r', 's': 's', 'ʃ': 'ch',
-    't': 't', 'v': 'v', 'z': 'z', 'ʒ': 'j', # French 'j' sound maps to PT 'j'
+    't': 't', 'v': 'v', 'z': 'z', 'ʒ': 'j',
     'x': 'ks', 'ts': 'ts', 'dz': 'dz', 'tʃ': 'tch', 'dʒ': 'dj',
-    'h': '' # H is usually silent
+    'h': 'h'
 }
 
 # Mapeamento de fonemas francês para português com regras contextuais aprimoradas
@@ -169,8 +165,8 @@ SPECIAL_CASES = {
     "c'est": "sé",
     "c'était": "seté",
     "c'étaient": "setén",
-    "j'aie": "je", # User wanted 'e' fechado, which is 'e' in our map
-    "j'ai": "jé", # 'é' aberto
+    "j'aie": "je",
+    "j'ai": "jé",
     "est-ce": "és",
     "est-ce que": "és k",
     "qu'est-ce": "kés",
@@ -194,86 +190,75 @@ def normalize_text(text: str) -> str:
     return text.lower()
 
 def get_ipa_pronunciation(word: str) -> str:
-    """Obtém a pronúncia IPA de uma palavra, consultando dicionário e fallback para epitran."""
+    """Obtém a pronúncia IPA de uma palavra."""
     word = word.lower()
+    
+    # Verificar no dicionário primeiro
     if word in ipa_dictionary:
-        # Handle multiple pronunciations in dictionary
-        pron = ipa_dictionary[word]
-        if isinstance(pron, list):
-            return pron[0] # Return the first pronunciation if multiple exist
-        return pron
+        return ipa_dictionary[word]
+    
+    # Usar epitran como fallback
     if epi:
         try:
             return epi.transliterate(word)
         except Exception as e:
-            logger.warning(f"Erro ao transliterar '{word}' com Epitran: {e}")
-    return word # Return original word if IPA not found
+            logger.warning(f"Erro ao transliterar '{word}': {e}")
+    
+    return word  # Retorna a palavra original se não conseguir obter a pronúncia
 
 def split_into_phonemes(ipa: str) -> List[str]:
-    """Divide uma string IPA em fonemas individuais baseados no mapeamento PT."""
+    """Divide uma string IPA em fonemas individuais, ignorando caracteres não fonéticos."""
     phonemes = []
     i = 0
-    # Limpar IPA de caracteres ignorados antes de processar
+    
+    # Limpar a string IPA de caracteres não fonéticos
     cleaned_ipa = ''.join([c for c in ipa if c not in IGNORED_CHARS])
-    valid_phonemes = set(IPA_TO_SIMPLE_PT.keys())
-
+    
     while i < len(cleaned_ipa):
-        matched = False
-        # Verificar fonemas mais longos primeiro (ex: 3 caracteres como 'ɛ̃')
-        for length in range(3, 0, -1): 
+        # Verificar dígrafos e trígrafos primeiro
+        found = False
+        for length in [3, 2]:  # Verificar sequências de 3 e 2 caracteres
             if i + length <= len(cleaned_ipa):
                 seq = cleaned_ipa[i:i+length]
-                if seq in valid_phonemes:
+                # Verificar se a sequência é um fonema válido
+                if any(seq == k or seq in IPA_TO_SIMPLE for k in IPA_TO_SIMPLE):
                     phonemes.append(seq)
                     i += length
-                    matched = True
+                    found = True
                     break
-        if not matched:
-            # Se nenhum fonema conhecido for encontrado, registrar e avançar
-            # Isso pode indicar um problema no IPA ou no mapeamento
-            if cleaned_ipa[i] not in IGNORED_CHARS:
-                 logger.debug(f"Caractere IPA não reconhecido/mapeado: '{cleaned_ipa[i]}' em IPA '{ipa}'")
+        
+        if not found:
+            # Verificar se o caractere atual é um fonema válido
+            if cleaned_ipa[i] in IPA_TO_SIMPLE or any(cleaned_ipa[i] == k for k in IPA_TO_SIMPLE):
+                phonemes.append(cleaned_ipa[i])
+            # Se não for um fonema válido e não for um caractere ignorado, registrar warning
+            elif cleaned_ipa[i] not in IGNORED_CHARS:
+                logger.debug(f"Fonema não mapeado: '{cleaned_ipa[i]}' na pronúncia '{ipa}'")
             i += 1
-            
-    return phonemes
     
-def map_phonemes_to_portuguese(phonemes: List[str]) -> List[str]:
-    """Mapeia fonemas IPA para representação adaptada ao português usando IPA_TO_SIMPLE_PT."""
+    return phonemes
+
+def map_phonemes_to_simple(phonemes: List[str]) -> List[str]:
+    """Mapeia fonemas IPA para representação simplificada."""
     result = []
     for p in phonemes:
-        if p in IPA_TO_SIMPLE_PT:
-            result.append(IPA_TO_SIMPLE_PT[p])
+        if p in IPA_TO_SIMPLE:
+            result.append(IPA_TO_SIMPLE[p])
         else:
-            # Logar aviso se um fonema IPA não estiver no mapa e pular
-            logger.warning(f"Fonema IPA '{p}' não encontrado no mapeamento PT. Pulando.")
+            # Tentar mapear caractere por caractere
+            mapped = True
+            for char in p:
+                if char in IPA_TO_SIMPLE:
+                    result.append(IPA_TO_SIMPLE[char])
+                elif char not in IGNORED_CHARS:
+                    mapped = False
+                    logger.debug(f"Caractere não mapeado: '{char}' no fonema '{p}'")
+            
+            if not mapped and p not in IGNORED_CHARS:
+                # Se não conseguiu mapear e não é um caractere ignorado, adicionar o fonema original
+                result.append(p)
+    
     return result
-
-def apply_french_rules(phonemes_pt: List[str], word: str) -> List[str]:
-    """Aplica regras de silenciamento francesas comuns sobre os fonemas já mapeados para PT."""
-    if not phonemes_pt:
-        return phonemes_pt
-
-    processed = phonemes_pt[:] # Trabalhar em uma cópia
-
-    # Regra: Remover 'e' final mudo (mapeado para 'e')
-    # Condições: palavra termina em 'e' (não 'ée'), não é palavra curta (le, de, me, te, se, ce), 
-    # e o último fonema PT é 'e'.
-    if (word.endswith('e') and not word.endswith('ée') and len(word) > 2 and 
-            processed and processed[-1] == 'e'):
-        # Verificação adicional: não remover se for a única vogal ou sílaba tônica?
-        # Por simplicidade, removemos por enquanto.
-        processed = processed[:-1]
-
-    # Regras para consoantes finais mudas (s, t, d, x, z, p, g) são complexas
-    # e dependem muito de exceções e liaisons. É mais seguro confiar que
-    # a fonte IPA (dicionário ou Epitran) já removeu essas consoantes mudas.
-    # Ex: 'petit' -> /pəti/, 'petits' -> /pəti/, 'parlent' -> /paʁl/
-    # Portanto, não aplicaremos regras genéricas de remoção de consoantes finais aqui.
-
-    # Remover fonemas vazios resultantes do mapeamento (ex: 'h' -> '')
-    processed = [p for p in processed if p]
-
-    return processed
 
 def apply_french_rules(phonemes: List[str]) -> List[str]:
     """Aplica regras específicas do francês à sequência de fonemas."""
@@ -310,119 +295,64 @@ def apply_french_rules(phonemes: List[str]) -> List[str]:
     return phonemes
 
 def simplify_pronunciation(word: str) -> str:
-    """Pipeline completo para simplificar a pronúncia de uma palavra para PT."""
+    """Simplifica a pronúncia de uma palavra francesa para uma representação mais próxima do português."""
+    # Verificar casos especiais primeiro
     word_lower = word.lower()
-    logger.debug(f"--- Processando Palavra: '{word_lower}' ---")
-
-    # 1. Casos Especiais (palavras/expressões inteiras)
     if word_lower in SPECIAL_CASES:
-        logger.debug(f"Aplicando caso especial: {SPECIAL_CASES[word_lower]}")
         return SPECIAL_CASES[word_lower]
-
-    # 2. Obter Pronúncia IPA
-    ipa = get_ipa_pronunciation(word_lower)
-    if not ipa or ipa == word_lower: # Se IPA não for encontrado ou falhar
-        logger.warning(f"Não foi possível obter IPA para '{word_lower}'. Retornando palavra original.")
-        return word_lower # Ou retornar vazio? Depende do comportamento desejado.
     
-    # Lidar com múltiplas pronúncias (ex: 'relasjɔ̃, relasjɔ̃') - pegar a primeira
-    if ',' in ipa:
-        ipa = ipa.split(',')[0].strip()
-    logger.debug(f"IPA Obtido: '{ipa}'")
-
-    # 3. Dividir IPA em Fonemas
-    phonemes_ipa = split_into_phonemes(ipa)
-    logger.debug(f"Fonemas IPA: {phonemes_ipa}")
-
-    # 4. Mapear Fonemas IPA para PT
-    phonemes_pt = map_phonemes_to_portuguese(phonemes_ipa)
-    logger.debug(f"Fonemas PT Mapeados: {phonemes_pt}")
-
-    # 5. Aplicar Regras Francesas (silenciamento) sobre Fonemas PT
-    phonemes_pt_rules = apply_french_rules(phonemes_pt, word_lower)
-    logger.debug(f"Fonemas PT Pós-Regras Francesas: {phonemes_pt_rules}")
-
-    # 6. Juntar Fonemas PT
-    final_pronunciation = ''.join(phonemes_pt_rules)
-    logger.debug(f"Pronúncia Unida Inicial: '{final_pronunciation}'")
-
-    # 7. Aplicar Padrões de Substituição Globais (ajustes finos)
-    for pattern, replacement in PATTERN_REPLACEMENTS:
-        final_pronunciation = re.sub(pattern, replacement, final_pronunciation)
-    logger.debug(f"Após Substituições Globais: '{final_pronunciation}'")
-
-    # 8. FIX para Duplicação (Solução temporária e simples)
-    # Verifica se a string é uma repetição exata de sua primeira metade
-    if len(final_pronunciation) > 4 and len(final_pronunciation) % 2 == 0:
-        half = len(final_pronunciation) // 2
-        if final_pronunciation[:half] == final_pronunciation[half:]:
-             logger.warning(f"Detectada duplicação exata em '{word}': '{final_pronunciation}'. Corrigindo para '{final_pronunciation[:half]}'")
-             final_pronunciation = final_pronunciation[:half]
-
-    logger.debug(f"Pronúncia Final para '{word}': '{final_pronunciation}'")
-    return final_pronunciation
+    # Obter pronúncia IPA
+    ipa = get_ipa_pronunciation(word)
+    
+    # Dividir em fonemas
+    phonemes = split_into_phonemes(ipa)
+    
+    # Mapear para representação simplificada
+    simple_phonemes = map_phonemes_to_simple(phonemes)
+    
+    # Aplicar regras específicas do francês
+    simple_phonemes = apply_french_rules(simple_phonemes)
+    
+    # Juntar fonemas em uma string
+    return ''.join(simple_phonemes)
 
 def process_sentence(sentence: str) -> str:
-    """Processa uma frase completa, palavra por palavra, aplicando regras especiais."""
-    logger.debug(f"--- Processando Frase: '{sentence}' ---")
-    
-    # Importar SpecialRoules dinamicamente para aplicar liaisons, etc.
-    apply_special_rules = lambda words, sentence: words # Função dummy padrão
+    """Processa uma frase completa, palavra por palavra."""
+    # Importar SpecialRoules apenas quando necessário para evitar importação circular
     try:
-        # Assumindo que SpecialRoules.py tem apply_special_rules(words: List[str], sentence: str) -> List[str]
-        from SpecialRoules import apply_special_rules 
-        logger.info("Módulo SpecialRoules carregado com sucesso.")
+        from SpecialRoules import apply_special_rules
     except ImportError:
-        logger.warning("Módulo SpecialRoules não encontrado. Regras de liaison e outras não serão aplicadas.")
-    except Exception as e:
-        logger.error(f"Erro ao importar ou usar SpecialRoules: {e}")
-
-    # Tokenizar preservando hífens e apóstrofos nas palavras
-    # Usar regex mais simples para separar palavras e pontuações
-    words_and_punctuation = re.findall(r"([\w'-]+)|([^\w'\s-]+)", sentence)
-    # words_only = [match[0].lower() for match in words_and_punctuation if match[0]] # Extrai apenas as palavras
+        logger.warning("Módulo SpecialRoules não encontrado. Algumas regras especiais não serão aplicadas.")
+        apply_special_rules = lambda words: words
     
-    # Preparar lista de palavras para SpecialRoules
-    words_for_rules = [match[0].lower() for match in words_and_punctuation if match[0]]
-
-    # Aplicar regras especiais (liaison, etc.) from SpecialRoules
-    try:
-        # Passar a lista de palavras e a frase original para contexto
-        processed_word_list = apply_special_rules(words_for_rules, sentence) 
-        logger.debug(f"Palavras após SpecialRoules: {processed_word_list}")
-    except Exception as e:
-        logger.error(f"Erro ao aplicar regras especiais de SpecialRoules: {e}")
-        processed_word_list = words_for_rules # Fallback para lista original
-
-    # Processar cada palavra (ou grupo unido por liaison) da lista retornada por SpecialRoules
+    # Dividir a frase em palavras
+    words = re.findall(r'\b\w+\b', sentence.lower())
+    
+    # Aplicar regras especiais (liaison, etc.)
+    words = apply_special_rules(words)
+    
+    # Processar cada palavra
     pronunciations = []
-    word_index_rules = 0
-    for word_part, punct_part in words_and_punctuation:
-        if word_part: # Se for uma palavra
-            if word_index_rules < len(processed_word_list):
-                # Pega a palavra correspondente da lista processada por SpecialRoules
-                # Isso assume que SpecialRoules mantém a ordem e número de palavras
-                # ou retorna palavras modificadas/unidas na posição correta.
-                # Se SpecialRoules alterar muito a estrutura, essa lógica pode falhar.
-                current_word_to_pronounce = processed_word_list[word_index_rules]
-                if current_word_to_pronounce: # Evitar processar strings vazias
-                    pron = simplify_pronunciation(current_word_to_pronounce)
-                    pronunciations.append(pron)
-                word_index_rules += 1
-            else:
-                # Se SpecialRoules retornou menos palavras que o original (improvável?)
-                logger.warning(f"Inconsistência entre palavras originais e processadas por SpecialRoules perto de '{word_part}'")
-                # Tentar processar a palavra original como fallback
-                pron = simplify_pronunciation(word_part.lower())
-                pronunciations.append(pron)
-        # elif punct_part: # Se for pontuação, adicionar à saída? Não, a função retorna só a pronúncia.
-        #     # pronunciations.append(punct_part) # Manter pontuação?
-        #     pass
-
+    for word in words:
+        pron = simplify_pronunciation(word)
+        pronunciations.append(pron)
+    
     # Juntar as pronúncias com espaços
-    final_sentence_pronunciation = ' '.join(filter(None, pronunciations)) # Filtra Nones/vazios
-    logger.debug(f"Pronúncia Final da Frase: '{final_sentence_pronunciation}'")
-    return final_sentence_pronunciation
+    return ' '.join(pronunciations)
+
+def remove_silent_endings(pronunciation, word):
+    # Verificar se a palavra termina com 'ent' e a pronúncia termina com 't'
+    if word.endswith('ent') and pronunciation.endswith('t'):
+        pronunciation = pronunciation[:-1]
+    # Verificar se a palavra termina com 'es' e a pronúncia termina com 's'
+    if word.endswith('es') and pronunciation.endswith('s'):
+        pronunciation = pronunciation[:-1]
+    # Verificar se a palavra termina com 'e' mudo
+    if word.endswith('e') and not word.endswith('le') and not word.endswith('re'):
+        if pronunciation.endswith('ə'):
+            pronunciation = pronunciation[:-1]
+    # Adicionar outras regras conforme necessário
+    return pronunciation
 
 
 # Ajustar listas conforme sua necessidade
