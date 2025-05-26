@@ -145,9 +145,9 @@ SPECIAL_CASES = {
 
 # Padrões de substituição para correções específicas
 PATTERN_REPLACEMENTS = [
-    (r'sjõ\b', 'iõ'),
-    (r'ésts k', 'és k'),
-    (r'késts k', 'kés k'),
+    (r'sjõ\b', 'siõn'),
+    (r'ésts k', 'ésk'),
+    (r'késts k', 'késk'),
 ]
 
 
