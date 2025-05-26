@@ -32,6 +32,7 @@ except Exception as e:
 IGNORED_CHARS = set([',', '.', ';', ':', '!', '?', ' ', '\t', '\n', '-', '_', '(', ')', '[', ']', '{', '}', '"', "'"])
 
 # Mapeamento de fonemas IPA para representação simplificada
+# Nota: mapeamos IPA 'j' (semivogal) para 'i' para falantes de português.
 IPA_TO_SIMPLE = {
     'a': 'a', 'ɑ': 'a', 'ɑ̃': 'ã',
     'e': 'e', 'ɛ': 'é', 'ə': 'e', 'œ': 'ö', 'ø': 'ö',
@@ -40,7 +41,8 @@ IPA_TO_SIMPLE = {
     'u': 'u', 'ʊ': 'u',
     'y': 'ü',
     'ɛ̃': 'ẽ', 'œ̃': 'ẽ',
-    'j': 'j', 'w': 'w', 'ɥ': 'ɥ',
+    'j': 'i',   # ajustado: semivogal IPA 'j' vira 'i' para facilitar
+    'w': 'w', 'ɥ': 'ɥ',
     'b': 'b', 'd': 'd', 'f': 'f', 'g': 'g', 'k': 'k',
     'l': 'l', 'm': 'm', 'n': 'n', 'ɲ': 'nh', 'ŋ': 'ng',
     'p': 'p', 'ʁ': 'r', 'r': 'r', 's': 's', 'ʃ': 'ch',
