@@ -170,7 +170,9 @@ SPECIAL_CASES = {
     "est-ce": "és",
     "est-ce que": "és k",
     "qu'est-ce": "kés",
-    "qu'est-ce que": "kés k"
+    "qu'est-ce que": "kés k",
+    "jusqu'au": "jusko",
+    "jusqu'aux": "jusko",
 }
 
 # Padrões de substituição para correções específicas
@@ -286,7 +288,7 @@ def apply_french_rules(phonemes: List[str]) -> List[str]:
         phonemes = phonemes[:-1]  # Remover a última consoante
     
     # Regra 3: Tratamento de 'e' mudo no final
-    if phonemes[-1] == 'e' and len(phonemes) > 1:
+    if phonemes[-1] == 'ə':
         phonemes = phonemes[:-1]  # Remover 'e' mudo no final
     
     # Remover elementos vazios
@@ -534,7 +536,7 @@ def transcrever_fonetica(texto):
     texto_limpo = re.sub(r'[^\w\s\'-]', ' ', texto)
     
     # Dividir em palavras
-    palavras = texto_limpo.split()
+    palavras = re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿ]+)?", texto.lower())
     
     # Processar cada palavra
     resultado = []
