@@ -101,57 +101,6 @@ def get_sentence():
         logger.exception("Erro em /get_sentence")
         return jsonify({'error': str(e)}), 500
 
-"""
-@app.route('/upload', methods=['POST'])
-def upload():
-    file = request.files.get('audio')
-    text = request.form.get('text')
-    if not file or not text:
-        return jsonify({'error': 'Áudio ou texto faltando'}), 400
-
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
-    tmp.write(file.read())
-    tmp.close()
-
-    transcription = executor.submit(process_audio, tmp.name).result(timeout=120)
-
-    user_norm = normalize_text(transcription).split()
-    ref_norm  = normalize_text(text).split()
-
-    mapped, _ = WordMatching.get_best_mapped_words(user_norm, ref_norm)
-
-    diff_html = []
-    feedback = {}
-    pron = {}
-    correct, incorrect = 0, 0
-
-    for real, got in zip(ref_norm, mapped):
-        corr = transliterate_and_convert_sentence(real)
-        usr  = transliterate_and_convert_sentence(got) if got!='-' else ''
-        ok   = WordMetrics.hybrid_similarity(corr, usr) >= 0.8
-        cls  = 'correct' if ok else 'incorrect'
-        if ok:
-            correct += 1
-        else:
-            incorrect += 1
-            feedback[real] = {'correct': corr, 'user': usr,
-                              'suggestion': f"Tente '{corr}'"}
-        pron[real] = {'correct': corr, 'user': usr}
-        diff_html.append(f'<span class="word {cls}">{real}</span>')
-
-    total = correct + incorrect or 1
-    ratio = correct/total*100
-    completeness = len([m for m in mapped if m!='-']) / len(ref_norm) * 100
-
-    return jsonify({
-        'ratio': f"{ratio:.2f}",
-        'diff_html': ' '.join(diff_html),
-        'pronunciations': pron,
-        'feedback': feedback,
-        'completeness_score': f"{completeness:.2f}"
-    })
-"""
-
 # -----------------------------------------------------------------------------
 # Start
 # -----------------------------------------------------------------------------
