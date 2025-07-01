@@ -28,7 +28,6 @@
       content="Pronúncia francesa, treinamento oral, FLE, DELF"
     />
     <link rel="canonical" href="treinadordepronunciadefrances.up.railway.app" />
-    <!-- Open Graph / Facebook -->
     <meta property="og:title" content="Entraîneur de prononciation" />
     <meta
       property="og:description"
@@ -42,7 +41,6 @@
       property="og:url"
       content="treinadordepronunciadefrances.up.railway.app"
     />
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7645741188042839"
      crossorigin="anonymous"></script>
@@ -55,7 +53,6 @@
           <header
             class="header-box container my-4 p-4 position-relative text-center"
           >
-            <!-- ícone à esquerda -->
             <img
               src="https://firebasestorage.googleapis.com/v0/b/banco-de-dados-abc12.firebasestorage.app/o/iconeFranca.svg?alt=media&token=3a4e7282-5ce2-42e0-b5d0-2eab8bacf42f"
               alt="Ícone França"
@@ -63,10 +60,8 @@
               style="width: 40px; margin-left: 30px"
             />
 
-            <!-- título central -->
             <h1 class="mb-4">Treinador de Pronúncia</h1>
 
-            <!-- ícone à direita -->
             <img
               src="https://firebasestorage.googleapis.com/v0/b/banco-de-dados-abc12.firebasestorage.app/o/iconeFranca.svg?alt=media&token=3a4e7282-5ce2-42e0-b5d0-2eab8bacf42f"
               alt="Ícone França"
@@ -84,7 +79,6 @@
               >Selecione uma categoria :</label
             >
             <select class="form-select" id="category" name="category">
-              <!-- Cuisine et transport -->
               <optgroup label="Pharses Metro-boulout-dôdo">
                 <option value="transport">Transport(Transporte)</option>
                 <option value="aeroport">"Aeroport(Aeroporto)</option>
@@ -98,7 +92,6 @@
                 <option value="musee">Musee(Museu)</option>
               </optgroup>
 
-              <!-- Autres -->
               <optgroup label="Autres">
                 <option value="PROPOSER">Comment faire une preposition</option>
                 <option value="REPONDRE_POSITIVEMENT">
@@ -162,7 +155,6 @@
                 <option value="negation">La negation (A negação)</option>
               </optgroup>
 
-              <!-- Grammaire -->
               <optgroup label="Grammaire">
                 <option value="Expressions_en_Conditionnel_Present">
                   Expressions en Conditionnel Présent
@@ -213,7 +205,14 @@
               </optgroup>
             </select>
           </div>
-
+          
+          <div class="mb-3">
+            <label for="languageSelector" class="form-label">Selecione o idioma da voz:</label>
+            <select class="form-select" id="languageSelector">
+              <option value="fr-FR" selected>Français (Voz Francesa)</option>
+              <option value="en-GB">English (British Voice)</option>
+            </select>
+          </div>
           <div class="mb-3">
             <label for="text" class="form-label"
               >Escreve ou gere um texto clicando no botão abaixo :</label
@@ -253,7 +252,6 @@
             <h3 id="pronunciation"></h3>
           </div>
 
-          <!-- opcional: -->
           <hr class="section-divider" />
 
           <div id="hintsContainer" class="mt-3">
@@ -294,8 +292,8 @@
         // Define uma opção aleatória
         categorySelect.selectedIndex = randomIndex;
 
-        // Inicializa as vozes
-        initVoices();
+        // Apenas inicializa a API de fala. As vozes serão carregadas quando necessário.
+        initSpeechAPI();
       });
 
       // Funções auxiliares para desabilitar/habilitar botões e mostrar/ocultar mensagens
@@ -334,7 +332,6 @@
         })
           .then((response) => {
             if (!response.ok) {
-              // Se o servidor retornar, por exemplo, 500 ou outro erro
               throw new Error(
                 "Erro no servidor /pronounce: " + response.status
               );
@@ -342,23 +339,17 @@
             return response.json();
           })
           .then((data) => {
-            // Verifica se a resposta contém um campo "error"
             if (data.error) {
               console.error(
                 "Erro retornado pelo servidor /pronounce:",
                 data.error
               );
-              // Aqui você pode exibir uma mensagem de erro na tela, se quiser
-              return; // Encerra a função, não prossegue
+              return; 
             }
-
-            // Verifica se data.pronunciations existe
             if (!data.pronunciations) {
               console.warn("pronunciations não veio na resposta. data =", data);
-              return; // Encerra a função
+              return; 
             }
-
-            // Agora sim podemos usar .split
             const pronunciations = data.pronunciations;
             document.getElementById("pronunciation").innerText = pronunciations;
           })
@@ -366,7 +357,6 @@
             console.error("Erro ao buscar pronúncia:", error);
           });
 
-        // Busca dicas de pronúncia
         fetch("/hints", {
           method: "POST",
           headers: {
@@ -380,14 +370,11 @@
               console.error("Erro retornado pelo servidor /hints:", data.error);
               return;
             }
-
             const hintsList = document.getElementById("hintsList");
-            hintsList.innerHTML = ""; // Limpa a lista
-
+            hintsList.innerHTML = "";
             if (data.hints && data.hints.length > 0) {
               data.hints.forEach((hint) => {
                 const li = document.createElement("li");
-                // Importante: Usar innerHTML em vez de innerText para renderizar as tags HTML
                 li.innerHTML = `<strong>${escapeHtml(
                   hint.word
                 )}</strong>: ${hint.explanations.join(", ")}`;
@@ -405,9 +392,7 @@
       function generateSentence() {
         disableButtons();
         showMessage("Gerando frase...");
-
         const category = document.getElementById("category").value;
-
         fetch("/get_sentence", {
           method: "POST",
           headers: {
@@ -425,7 +410,6 @@
               showMessage("Erro ao gerar frase. Tente novamente.");
               return;
             }
-
             document.getElementById("text").value = data.fr_sentence;
             fetchPronunciation(data.fr_sentence);
             hideMessage();
@@ -439,167 +423,61 @@
           });
       }
 
-      let frenchVoices = [];
-      let selectedVoice = null;
+      // --- SCRIPT DE VOZ ATUALIZADO ---
+
       let synth = window.speechSynthesis;
       let utterance = null;
 
-      // Inicializa as vozes e tenta selecionar a melhor voz francesa
-      function initVoices() {
-        // Tenta obter as vozes imediatamente
-        frenchVoices = synth
-          .getVoices()
-          .filter((voice) => voice.lang.startsWith("fr"));
-        console.log("Vozes iniciais:", frenchVoices.length);
-
-        // Se não houver vozes, espera pelo evento 'voiceschanged'
-        if (frenchVoices.length === 0 && "onvoiceschanged" in synth) {
-          synth.onvoiceschanged = function () {
-            console.log("Evento voiceschanged disparado");
-            frenchVoices = synth
-              .getVoices()
-              .filter((voice) => voice.lang.startsWith("fr"));
-            console.log("Vozes carregadas após evento:", frenchVoices.length);
-            selectedVoice = getBestFrenchVoice();
-            if (selectedVoice) {
-              console.log(
-                "Melhor voz francesa selecionada após evento:",
-                selectedVoice.name,
-                selectedVoice.lang
-              );
-            } else {
-              console.warn(
-                "Nenhuma voz francesa de alta qualidade encontrada após evento."
-              );
-            }
+      // Garante que a lista de vozes seja carregada pelo navegador.
+      function initSpeechAPI() {
+        // O evento 'voiceschanged' é o método mais confiável para saber quando as vozes estão prontas.
+        if (synth.getVoices().length === 0 && "onvoiceschanged" in synth) {
+          synth.onvoiceschanged = () => {
+            console.log("Vozes carregadas pelo evento 'voiceschanged'.");
           };
-        } else {
-          selectedVoice = getBestFrenchVoice();
-          if (selectedVoice) {
-            console.log(
-              "Melhor voz francesa selecionada inicialmente:",
-              selectedVoice.name,
-              selectedVoice.lang
-            );
-          } else {
-            console.warn(
-              "Nenhuma voz francesa de alta qualidade encontrada inicialmente."
-            );
-          }
         }
-
-        // Fallback para garantir que as vozes sejam carregadas em alguns navegadores
+         // Um fallback para garantir que funcione em todos os navegadores
         setTimeout(() => {
-          if (frenchVoices.length === 0) {
-            console.log("Tentando obter vozes após timeout...");
-            frenchVoices = synth
-              .getVoices()
-              .filter((voice) => voice.lang.startsWith("fr"));
-            console.log("Vozes carregadas após timeout:", frenchVoices.length);
-            selectedVoice = getBestFrenchVoice();
-            if (selectedVoice) {
-              console.log(
-                "Melhor voz francesa selecionada após timeout:",
-                selectedVoice.name,
-                selectedVoice.lang
-              );
-            } else {
-              console.warn(
-                "Nenhuma voz francesa de alta qualidade encontrada após timeout."
-              );
+            if (synth.getVoices().length === 0) {
+                 console.log("Forçando carregamento de vozes após timeout.");
+                 synth.getVoices();
             }
-          }
-        }, 500); // Atraso de 500ms
+        }, 500)
       }
 
-      // Função para selecionar a melhor voz francesa disponível
-      function getBestFrenchVoice() {
-        if (frenchVoices.length === 0) {
-          console.warn("Nenhuma voz francesa disponível ainda.");
-          // Tenta obter novamente, pode ser que o evento não tenha disparado
-          frenchVoices = synth
-            .getVoices()
-            .filter((voice) => voice.lang.startsWith("fr"));
-          if (frenchVoices.length === 0) return null;
+      // **NOVA FUNÇÃO**: Encontra a melhor voz para um idioma específico (ex: 'fr-FR', 'en-GB')
+      function findBestVoice(targetLang) {
+        const langPrefix = targetLang.substring(0, 2); // 'fr' ou 'en'
+        let voices = synth.getVoices().filter((voice) => voice.lang.startsWith(langPrefix));
+
+        if (voices.length === 0) {
+            console.warn(`Nenhuma voz encontrada para o idioma: ${targetLang}`);
+            return null;
         }
 
-        // Prioridade para vozes premium/naturais
-        const premiumKeywords = [
-          "enhanced",
-          "premium",
-          "neural",
-          "google",
-          "microsoft",
-          "apple",
-          "natural",
-        ];
-        let bestVoice = null;
+        // Prioridade de busca:
+        // 1. Voz específica para a localidade (ex: en-GB) e que seja de alta qualidade.
+        // 2. Voz específica para a localidade.
+        // 3. Primeira voz encontrada para o idioma (ex: qualquer voz 'en').
 
-        // 1. Tenta encontrar vozes premium/naturais específicas para fr-FR
-        bestVoice = frenchVoices.find(
-          (voice) =>
-            voice.lang === "fr-FR" &&
-            premiumKeywords.some((keyword) =>
-              voice.name.toLowerCase().includes(keyword)
-            )
-        );
-        if (bestVoice) {
-          console.log("Voz premium fr-FR encontrada:", bestVoice.name);
-          return bestVoice;
+        const premiumKeywords = ["enhanced", "premium", "neural", "google", "microsoft", "apple", "natural"];
+        
+        let bestVoice = voices.find(voice => voice.lang === targetLang && premiumKeywords.some(kw => voice.name.toLowerCase().includes(kw)));
+        if (bestVoice) return bestVoice;
+
+        bestVoice = voices.find(voice => voice.lang === targetLang);
+        if (bestVoice) return bestVoice;
+        
+        // Se for inglês, priorizar vozes britânicas caso não ache 'en-GB' exato
+        if(langPrefix === 'en') {
+            let ukVoice = voices.find(v => v.name.toLowerCase().includes('uk') || v.name.toLowerCase().includes('british'));
+            if(ukVoice) return ukVoice;
         }
 
-        // 2. Tenta encontrar vozes premium/naturais para qualquer variante de francês (fr-CA, etc.)
-        bestVoice = frenchVoices.find((voice) =>
-          premiumKeywords.some((keyword) =>
-            voice.name.toLowerCase().includes(keyword)
-          )
-        );
-        if (bestVoice) {
-          console.log(
-            "Voz premium francesa (outra variante) encontrada:",
-            bestVoice.name
-          );
-          return bestVoice;
-        }
-
-        // 3. Tenta encontrar vozes padrão específicas para fr-FR
-        bestVoice = frenchVoices.find(
-          (voice) => voice.lang === "fr-FR" && voice.default
-        );
-        if (bestVoice) {
-          console.log("Voz padrão fr-FR encontrada:", bestVoice.name);
-          return bestVoice;
-        }
-        bestVoice = frenchVoices.find((voice) => voice.lang === "fr-FR");
-        if (bestVoice) {
-          console.log("Voz fr-FR (não padrão) encontrada:", bestVoice.name);
-          return bestVoice;
-        }
-
-        // 4. Se não encontrou fr-FR, pega a primeira voz francesa padrão disponível
-        bestVoice = frenchVoices.find((voice) => voice.default);
-        if (bestVoice) {
-          console.log(
-            "Voz francesa padrão (outra variante) encontrada:",
-            bestVoice.name
-          );
-          return bestVoice;
-        }
-
-        // 5. Se não encontrou nenhuma padrão, pega a primeira voz francesa da lista
-        if (frenchVoices.length > 0) {
-          console.log(
-            "Nenhuma voz premium ou padrão encontrada. Usando a primeira voz francesa disponível:",
-            frenchVoices[0].name
-          );
-          return frenchVoices[0];
-        }
-
-        console.warn("Nenhuma voz francesa encontrada.");
-        return null;
+        console.log(`Nenhuma voz específica para '${targetLang}' encontrada. Usando a primeira disponível: ${voices[0].name}`);
+        return voices[0]; 
       }
-
-      // Função para falar o texto usando Web Speech API
+      
       function speakText() {
         const text = document.getElementById("text").value;
         if (!text || text.trim() === "") {
@@ -612,11 +490,8 @@
           return;
         }
 
-        // Cancela qualquer fala anterior
         if (synth.speaking) {
-          console.log("Cancelando fala anterior...");
           synth.cancel();
-          // Pequeno atraso para garantir que o cancelamento seja processado antes de iniciar nova fala
           setTimeout(() => startSpeaking(text), 100);
         } else {
           startSpeaking(text);
@@ -624,15 +499,15 @@
       }
 
       function startSpeaking(text) {
-        // Tenta obter a melhor voz novamente caso a inicialização tenha falhado
-        if (!selectedVoice) {
-          console.log("Tentando selecionar a melhor voz antes de falar...");
-          selectedVoice = getBestFrenchVoice();
-        }
+        // Pega o idioma selecionado no novo dropdown
+        const selectedLang = document.getElementById("languageSelector").value;
+        
+        // Encontra a melhor voz para esse idioma
+        const selectedVoice = findBestVoice(selectedLang);
 
         if (!selectedVoice) {
           showMessage(
-            "Nenhuma voz em francês encontrada. Verifique as vozes instaladas no seu sistema."
+            `Nenhuma voz em ${selectedLang === 'fr-FR' ? 'Francês' : 'Inglês Britânico'} encontrada. Verifique as vozes do seu sistema.`
           );
           console.warn("Vozes disponíveis:", synth.getVoices());
           return;
@@ -640,18 +515,13 @@
 
         utterance = new SpeechSynthesisUtterance(text);
         utterance.voice = selectedVoice;
-        utterance.lang = selectedVoice.lang; // Garante que o idioma correto seja usado
-        utterance.rate = 0.95; // Velocidade ligeiramente mais lenta para clareza
-        utterance.pitch = 1.0; // Tom padrão
-        utterance.volume = 1.0; // Volume máximo
+        utterance.lang = selectedLang; // Força o idioma correto
+        utterance.rate = 0.95; 
+        utterance.pitch = 1.0; 
+        utterance.volume = 1.0;
 
         utterance.onstart = function () {
-          console.log(
-            "Iniciando fala com a voz:",
-            selectedVoice.name,
-            "Idioma:",
-            utterance.lang
-          );
+          console.log(`Iniciando fala com a voz: ${selectedVoice.name} (Idioma: ${utterance.lang})`);
           showMessage("Falando...");
           disableButtons();
         };
@@ -660,39 +530,31 @@
           console.log("Fala concluída.");
           hideMessage();
           enableButtons();
-          utterance = null; // Limpa a referência
+          utterance = null;
         };
 
         utterance.onerror = function (event) {
           console.error("Erro na síntese de voz:", event.error);
           showMessage("Erro ao tentar falar: " + event.error);
-          hideMessage();
           enableButtons();
           utterance = null;
         };
 
         // Workaround para bug do Chrome/Edge que para após 15 segundos
         let intervalId = null;
-        if (
-          navigator.userAgent.includes("Chrome") ||
-          navigator.userAgent.includes("Edg")
-        ) {
+        if (navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("Edg")) {
           intervalId = setInterval(() => {
             if (synth.speaking) {
-              console.log("Mantendo a fala ativa (Chrome/Edge workaround)...");
               synth.pause();
               synth.resume();
             } else {
               clearInterval(intervalId);
             }
           }, 14000);
-
           utterance.addEventListener("end", () => clearInterval(intervalId));
           utterance.addEventListener("error", () => clearInterval(intervalId));
         }
 
-        // Inicia a fala
-        console.log("Chamando synth.speak...");
         synth.speak(utterance);
       }
     </script>
