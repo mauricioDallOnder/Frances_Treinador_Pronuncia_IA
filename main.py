@@ -104,10 +104,10 @@ def get_sentence():
 # -----------------------------------------------------------------------------
 # Start
 # -----------------------------------------------------------------------------
-if __name__ == '__main__':
-    # dev local
-    app.run(host='0.0.0.0', port=3000, debug=True)
-else:
-    # em produção (quando importado pelo Railway), use Waitress:
-    from waitress import serve
-    serve(app, host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
+# -----------------------------------------------------------------------------
+# Start (apenas dev local)
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 3000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
